@@ -28,8 +28,8 @@ class Ingredient(models.Model):
         'tsp': ['чайная ложка', 'чайные ложки', 'чайных ложек'],
     }
 
-    title = models.CharField(
-        max_length=256,
+    name = models.CharField(
+        max_length=128,
         unique=True,
         verbose_name='Название ингридиента'
     )
@@ -43,7 +43,7 @@ class Ingredient(models.Model):
     class Meta:
         """."""
 
-        ordering = ['title']
+        ordering = ['name']
         verbose_name = 'Ингридиент'
         verbose_name_plural = 'Ингридиенты'
 
@@ -64,7 +64,7 @@ class Ingredient(models.Model):
     def __str__(self):
         """Возвращает ограниченное строковое представление Ингридиента."""
         return (
-            f'{Truncator(self.title).words(LIMIT_OF_SYMBOLS)} -'
+            f'{Truncator(self.name).words(LIMIT_OF_SYMBOLS)} -'
             f'{Truncator(self.get_unit_dynamic()).words(LIMIT_OF_SYMBOLS)}'
         )
 
@@ -72,13 +72,13 @@ class Ingredient(models.Model):
 class Tag(models.Model):
     """Модель Тэга."""
 
-    title = models.CharField(
-        max_length=64,
+    name = models.CharField(
+        max_length=32,
         unique=True,
         verbose_name='Название'
     )
     slug = models.SlugField(
-        max_length=64,
+        max_length=32,
         unique=True,
         help_text=(
             'Человекочитаемое название страницы для URL; '
@@ -90,7 +90,7 @@ class Tag(models.Model):
     class Meta:
         """."""
 
-        ordering = ['title']
+        ordering = ['name']
         verbose_name = 'Тэг'
         verbose_name_plural = 'Тэги'
 
@@ -102,7 +102,7 @@ class Tag(models.Model):
 
     def __str__(self):
         """Возвращает ограниченное строковое представление Тэга."""
-        return Truncator(self.title).words(LIMIT_OF_SYMBOLS)
+        return Truncator(self.name).words(LIMIT_OF_SYMBOLS)
 
 
 class Recipe(models.Model):
@@ -113,7 +113,7 @@ class Recipe(models.Model):
         on_delete=models.CASCADE,
         verbose_name='Автор рецепта'
     )
-    title = models.CharField(
+    name = models.CharField(
         max_length=256,
         verbose_name='Название рецепта'
     )
@@ -125,30 +125,28 @@ class Recipe(models.Model):
         max_length=512,
         verbose_name='Описание рецепта'
     )
-    ingridients = models.ManyToManyField(
-        Ingredient,
-        through='RecipeIngredient',
-        verbose_name='Ингридиенты'
-    )
-    tag = models.ManyToManyField(
+    tags = models.ManyToManyField(
         Tag,
+        blank=True,
+        null=True,
         verbose_name='Тэг'
     )
     cook_time = models.PositiveSmallIntegerField(
         verbose_name='Время приготовления в минутах'
     )
+    created_at = models.DateTimeField(auto_now_add=True)
 
     class Meta:
         """."""
 
-        ordering = ['title']
+        ordering = ['name']
         verbose_name = 'Рецепт'
         verbose_name_plural = 'Рецепты'
         default_related_name = '%(class)ss'
 
     def __str__(self):
         """Возвращает ограниченное строковое представление Рецепта."""
-        return Truncator(self.title).words(LIMIT_OF_SYMBOLS)
+        return Truncator(self.name).words(LIMIT_OF_SYMBOLS)
 
 
 class RecipeIngredient(models.Model):
@@ -157,6 +155,7 @@ class RecipeIngredient(models.Model):
     recipe = models.ForeignKey(
         Recipe,
         on_delete=models.CASCADE,
+        related_name='recipes',
         verbose_name='Рецепт'
     )
     ingredient = models.ForeignKey(
@@ -171,10 +170,35 @@ class RecipeIngredient(models.Model):
     class Meta:
         """."""
 
-        default_related_name = '%(class)ss'
         verbose_name = 'Ингредиент рецепта'
-        verbose_name_plural = 'Ингредиенты рецептов'
+        verbose_name_plural = 'Ингредиенты рецепта'
 
     def __str__(self):
-        """Возвращает строковое представление ингридиента и кол-ва."""
+        """Возвращает строковое представление количества ингридиента."""
         return f'{self.ingredient} - {self.amount}'
+
+
+class Favorite(models.Model):
+    """."""
+
+    user = models.ForeignKey(
+        User,
+        on_delete=models.CASCADE
+    )
+    recipe = models.ForeignKey(
+        Recipe,
+        on_delete=models.CASCADE
+    )
+
+
+class ShoppingCart(models.Model):
+    """."""
+
+    user = models.ForeignKey(
+        User,
+        on_delete=models.CASCADE
+    )
+    recipe = models.ForeignKey(
+        Recipe,
+        on_delete=models.CASCADE
+    )
