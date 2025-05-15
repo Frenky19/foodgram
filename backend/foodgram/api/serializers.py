@@ -292,6 +292,19 @@ class RecipeSerializer(serializers.ModelSerializer):
             self.create_ingredients(instance, ingredients)
         return instance
 
+    def to_representation(self, instance):
+        """."""
+        representation = super().to_representation(instance)
+        request = self.context.get('request')
+        if request and request.user.is_authenticated:
+            representation['is_favorited'] = (
+                instance.favorites.filter(user=request.user).exists()
+            )
+            representation['is_in_shopping_cart'] = (
+                instance.shopping_carts.filter(user=request.user).exists()
+            )
+        return representation
+
 
 class SubscriptionSerializer(serializers.ModelSerializer):
     """."""
