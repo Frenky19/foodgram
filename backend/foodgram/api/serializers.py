@@ -156,7 +156,7 @@ class RecipeSerializer(serializers.ModelSerializer):
         fields = (
             'id', 'tags', 'author', 'ingredients',
             'is_favorited', 'is_in_shopping_cart',
-            'name', 'image', 'text', 'cook_time'
+            'name', 'image', 'description', 'cook_time'
         )
 
     def get_is_favorited(self, obj):
