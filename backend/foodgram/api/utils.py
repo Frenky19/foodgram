@@ -81,6 +81,14 @@ def generate_shopping_list(user):
     }
 
 
+def generate_shopping_list_text(content):
+    """."""
+    text = "Список покупок:\n\n"
+    for item in content['ingredients']:
+        text += f"- {item['name']} ({item['unit']}): {item['amount']}\n"
+    return text.strip()
+
+
 def generate_pdf_response(content, user):
     """."""
     buffer = BytesIO()
@@ -176,14 +184,16 @@ def generate_csv_response(content):
         'attachment; filename="shopping_list.csv"'
     )
     writer = csv.writer(response)
-    for line in content.split('\n'):
-        writer.writerow([line])
+    writer.writerow(['Ингредиент', 'Количество'])
+    for item in content['ingredients']:
+        writer.writerow([f"{item['name']} ({item['unit']})", item['amount']])
     return response
 
 
 def generate_txt_response(content):
     """."""
-    response = HttpResponse(content, content_type='text/plain')
+    text = generate_shopping_list_text(content)
+    response = HttpResponse(text, content_type='text/plain')
     response['Content-Disposition'] = (
         'attachment; filename="shopping_list.txt"'
     )
