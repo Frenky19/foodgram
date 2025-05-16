@@ -8,7 +8,8 @@ from api.serializers import (TagSerializer, IngredientSerializer,
 from meals.models import Tag, Ingredient, Recipe, Tag, Favorite, ShoppingCart
 from users.models import Subscription, User
 from django_filters import rest_framework as django_filters
-from .filters import RecipeFilter
+from api.filters import RecipeFilter
+from api.utils import generate_shopping_list, generate_pdf_response, generate_csv_response, generate_txt_response
 
 
 class UserViewSet(viewsets.ModelViewSet):
@@ -80,7 +81,21 @@ class IngredientViewSet(viewsets.ReadOnlyModelViewSet):
 
 
 class RecipeViewSet(viewsets.ModelViewSet):
-    """."""
+    """
+    Получение списка рецептов с возможностью фильтрации.
+
+    Параметры запроса:
+    - name - поиск по названию (частичное совпадение, без учета регистра)
+    - author - фильтр по ID автора
+    - tags - фильтр по слагам тегов (можно несколько через &)
+    - is_favorited - показать только избранное
+    - is_in_shopping_cart - показать только в корзине
+
+    Примеры:
+    - /api/recipes/?name=пицца
+    - /api/recipes/?tags=breakfast&tags=dinner
+    - /api/recipes/?author=2&is_favorited=1
+    """
 
     queryset = Recipe.objects.all()
     serializer_class = RecipeSerializer
@@ -91,13 +106,11 @@ class RecipeViewSet(viewsets.ModelViewSet):
     def get_queryset(self):
         """."""
         queryset = super().get_queryset()
-        queryset = queryset.select_related('author')
-        queryset = queryset.prefetch_related(
+        return queryset.select_related('author').prefetch_related(
             'tags',
             'ingredients',
-            'recipe_ingredients'
-        )
-        return queryset
+            'recipe_ingredients__ingredient'
+        ).distinct()
 
     def perform_create(self, serializer):
         """."""
@@ -138,3 +151,22 @@ class RecipeViewSet(viewsets.ModelViewSet):
                 )
             relation.delete()
             return Response(status=status.HTTP_204_NO_CONTENT)
+
+
+class ShoppingCartViewSet(viewsets.ViewSet):
+    """."""
+
+    permission_classes = [permissions.IsAuthenticated]
+
+    @action(detail=False, methods=['get'])
+    def download_shopping_cart(self, request):
+        """."""
+        format = request.query_params.get('format', 'txt')
+        content = generate_shopping_list(request.user)
+
+        if format == 'pdf':
+            return generate_pdf_response(content, request.user)
+        elif format == 'csv':
+            return generate_csv_response(content)
+        else:  # txt по умолчанию
+            return generate_txt_response(content)
