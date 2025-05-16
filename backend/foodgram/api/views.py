@@ -9,7 +9,7 @@ from meals.models import Tag, Ingredient, Recipe, Tag, Favorite, ShoppingCart
 from users.models import Subscription, User
 from django_filters import rest_framework as django_filters
 from api.filters import RecipeFilter
-from api.utils import generate_shopping_list, generate_pdf_response, generate_csv_response, generate_txt_response
+from api.utils import generate_shopping_list, generate_pdf_response, generate_csv_response, generate_txt_response, generate_shopping_list_text
 
 
 class UserViewSet(viewsets.ModelViewSet):
@@ -163,10 +163,11 @@ class ShoppingCartViewSet(viewsets.ViewSet):
         """."""
         format = request.query_params.get('format', 'txt')
         content = generate_shopping_list(request.user)
+        text = generate_shopping_list_text(content)
 
-        if format == 'pdf':
-            return generate_pdf_response(content, request.user)
+        if format == 'txt':
+            return generate_txt_response(text)
         elif format == 'csv':
             return generate_csv_response(content)
-        else:  # txt по умолчанию
-            return generate_txt_response(content)
+        else:
+            return generate_pdf_response(content, request.user)
