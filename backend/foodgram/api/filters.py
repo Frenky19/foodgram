@@ -16,12 +16,26 @@ class RecipeFilter(filters.FilterSet):
         to_field_name='slug',
         queryset=Tag.objects.all()
     )
+    name = filters.CharFilter(
+        method='filter_by_name',
+        label='Поиск по названию рецепта'
+    )
 
     class Meta:
         """."""
 
         model = Recipe
-        fields = ('author', 'tags', 'is_favorited', 'is_in_shopping_cart')
+        fields = (
+            'author', 'tags', 'is_favorited', 'is_in_shopping_cart', 'name'
+        )
+
+    def filter_by_name(self, queryset, name, value):
+        """
+        Поиск по частичному совпадению в названии рецепта.
+
+        Пример: /api/recipes/?name=суп
+        """
+        return queryset.filter(name__icontains=value)
 
     def filter_is_favorited(self, queryset, name, value):
         """."""
