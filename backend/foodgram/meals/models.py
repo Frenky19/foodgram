@@ -1,5 +1,6 @@
 from django.contrib.auth import get_user_model
 from django.db import models
+from django.core.validators import MinValueValidator
 from django.utils.text import Truncator, slugify
 from meals.constants import LIMIT_OF_SYMBOLS
 from users.models import User
@@ -97,7 +98,7 @@ class Tag(models.Model):
     def save(self, *args, **kwargs):
         """Автоматически генерирует слаг из названия Тэга."""
         if not self.slug:
-            self.slug = slugify(self.title)
+            self.slug = slugify(self.name)
         super().save(*args, **kwargs)
 
     def __str__(self):
@@ -132,7 +133,8 @@ class Recipe(models.Model):
         verbose_name='Тэг'
     )
     cook_time = models.PositiveSmallIntegerField(
-        verbose_name='Время приготовления в минутах'
+        verbose_name='Время приготовления в минутах',
+        validators=[MinValueValidator(1)]
     )
     created_at = models.DateTimeField(auto_now_add=True)
 
@@ -164,7 +166,8 @@ class RecipeIngredient(models.Model):
         verbose_name='Ингредиент'
     )
     amount = models.PositiveSmallIntegerField(
-        verbose_name='Количество'
+        verbose_name='Количество',
+        validators=[MinValueValidator(1)]
     )
 
     class Meta:
