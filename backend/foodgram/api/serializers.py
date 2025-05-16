@@ -7,6 +7,7 @@ from rest_framework.exceptions import ValidationError
 from meals.models import (Ingredient, Tag, Recipe, RecipeIngredient,
                           Favorite, ShoppingCart)
 from users.models import User, Subscription
+from rest_framework.validators import UniqueTogetherValidator
 
 
 class Base64ImageField(serializers.ImageField):
@@ -158,6 +159,12 @@ class RecipeSerializer(serializers.ModelSerializer):
             'is_favorited', 'is_in_shopping_cart',
             'name', 'image', 'description', 'cook_time'
         )
+        validators = [
+            UniqueTogetherValidator(
+                queryset=Recipe.objects.all(),
+                fields=['author', 'name']
+            )
+        ]
 
     def get_is_favorited(self, obj):
         """."""
@@ -207,12 +214,16 @@ class RecipeSerializer(serializers.ModelSerializer):
             raise ValidationError(
                 {'ingredients': 'Добавьте минимум один ингредиент'}
             )
-        for ingredient in ingredients:
-            if 'id' not in ingredient or 'amount' not in ingredient:
-                raise ValidationError({
-                    'ingredients': 'Неверный формат ингредиента'
-                })
-        ingredient_ids = [ingredient['id'] for ingredient in ingredients]
+        for item in ingredients:
+            if 'ingredient' not in item or 'amount' not in item:
+                raise ValidationError(
+                    {'ingredients': 'Неверный формат ингредиента'}
+                )
+            if 'id' not in item['ingredient']:
+                raise ValidationError(
+                    {'ingredients': 'Отсутствует ID ингредиента'}
+                )
+        ingredient_ids = [item['ingredient']['id'] for item in ingredients]
         existing_ingredients = Ingredient.objects.filter(id__in=ingredient_ids)
         found_ingredient = {
             ingredient.id for ingredient in existing_ingredients
