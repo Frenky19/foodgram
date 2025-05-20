@@ -3,7 +3,7 @@ from rest_framework.decorators import action
 from rest_framework.response import Response
 from api.permissions import IsAuthorOrReadOnly, IsAuthenticatedOrReadOnly
 from api.serializers import (TagSerializer, IngredientSerializer,
-                             RecipeSerializer, UserSerializer,
+                             RecipeSerializer, CustomUserSerializer,
                              RecipeMinifiedSerializer, SubscriptionSerializer)
 from meals.models import Tag, Ingredient, Recipe, Tag, Favorite, ShoppingCart
 from users.models import Subscription, User
@@ -16,7 +16,7 @@ class UserViewSet(viewsets.ModelViewSet):
     """."""
 
     queryset = User.objects.all()
-    serializer_class = UserSerializer
+    serializer_class = CustomUserSerializer
     permission_classes = [permissions.AllowAny]
 
     @action(detail=False, methods=['get'],

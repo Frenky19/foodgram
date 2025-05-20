@@ -11,17 +11,41 @@ class User(AbstractUser):
     - Поле для загрузки аватара профиля
     - Кастомные методы строкового представления
     """
-
-    profile_image = models.ImageField(
+    username = models.CharField(
+        max_length=64,
+        unique=True,
+        verbose_name='Логин'
+    )
+    email = models.EmailField(
+        max_length=64,
+        unique=True,
+        verbose_name='Email'
+    )
+    first_name = models.CharField(
+        max_length=64,
+        verbose_name='Имя'
+    )
+    last_name = models.CharField(
+        max_length=64,
+        verbose_name='Фамилия'
+    )
+    avatar = models.ImageField(
         upload_to='profile/images/',
         blank=True,
         null=True,
         verbose_name='Фото профиля'
     )
+    USERNAME_FIELD = 'email'
+    REQUIRED_FIELDS = (
+        'username',
+        'first_name',
+        'last_name'
+    )
 
     class Meta:
         """Мета-класс для настройки модели пользователя."""
 
+        ordering = ('username',)
         verbose_name = 'Пользователь'
         verbose_name_plural = 'Пользователи'
 

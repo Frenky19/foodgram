@@ -35,8 +35,8 @@ class IngredientInRecipeSerializer(serializers.ModelSerializer):
         source='ingredient.name',
         read_only=True
     )
-    unit = serializers.CharField(
-        source='ingredient.unit',
+    measurement_unit = serializers.CharField(
+        source='ingredient.measurement_unit',
         read_only=True
     )
 
@@ -44,7 +44,7 @@ class IngredientInRecipeSerializer(serializers.ModelSerializer):
         """."""
 
         model = RecipeIngredient
-        fields = ('id', 'name', 'unit', 'amount')
+        fields = ('id', 'name', 'measurement_unit', 'amount')
 
 
 class IngredientSerializer(serializers.ModelSerializer):
@@ -54,7 +54,7 @@ class IngredientSerializer(serializers.ModelSerializer):
         """."""
 
         model = Ingredient
-        fields = ('id', 'name', 'unit')
+        fields = ('id', 'name', 'measurement_unit')
 
 
 class TagSerializer(serializers.ModelSerializer):
@@ -83,11 +83,11 @@ class RecipeMinifiedSerializer(serializers.ModelSerializer):
         return obj.image.url if obj.image else None
 
 
-class UserSerializer(serializers.ModelSerializer):
+class CustomUserSerializer(serializers.ModelSerializer):
     """."""
 
-    is_subscribed = serializers.SerializerMethodField()
-    profile_image = Base64ImageField(required=False, allow_null=True)
+    # is_subscribed = serializers.SerializerMethodField()
+    # avatar = Base64ImageField(required=False, allow_null=True)
 
     class Meta:
         """."""
@@ -95,7 +95,7 @@ class UserSerializer(serializers.ModelSerializer):
         model = User
         fields = (
             'id', 'email', 'username', 'first_name',
-            'last_name', 'is_subscribed', 'profile_image'
+            'last_name'  # , 'is_subscribed', 'avatar'
         )
 
     def get_is_subscribed(self, obj):
@@ -107,21 +107,21 @@ class UserSerializer(serializers.ModelSerializer):
             ).exists()
         )
 
-    def get_profile_image(self, obj):
+    def get_avatar(self, obj):
         """."""
-        return obj.profile_image.url if obj.profile_image else None
+        return obj.avatar.url if obj.avatar else None
 
 
-class UserWithRecipesSerializer(UserSerializer):
+class UserWithRecipesSerializer(CustomUserSerializer):
     """."""
 
     recipes = serializers.SerializerMethodField()
     recipes_count = serializers.SerializerMethodField()
 
-    class Meta(UserSerializer.Meta):
+    class Meta(CustomUserSerializer.Meta):
         """."""
 
-        fields = UserSerializer.Meta.fields + ('recipes', 'recipes_count')
+        fields = CustomUserSerializer.Meta.fields + ('recipes', 'recipes_count')
 
     def get_recipes(self, obj):
         """."""
@@ -141,7 +141,7 @@ class RecipeSerializer(serializers.ModelSerializer):
     """."""
 
     tags = TagSerializer(many=True, read_only=True)
-    author = UserSerializer(read_only=True)
+    author = CustomUserSerializer(read_only=True)
     ingredients = IngredientInRecipeSerializer(
         many=True,
         source='recipe_ingredients'
@@ -334,8 +334,8 @@ class SubscriptionSerializer(serializers.ModelSerializer):
     is_subscribed = serializers.SerializerMethodField()
     recipes = serializers.SerializerMethodField()
     recipes_count = serializers.SerializerMethodField()
-    profile_image = Base64ImageField(
-        source='author.profile_image', read_only=True
+    avatar = Base64ImageField(
+        source='author.avatar', read_only=True
     )
 
     class Meta:
@@ -344,7 +344,7 @@ class SubscriptionSerializer(serializers.ModelSerializer):
         model = Subscription
         fields = (
             'email', 'id', 'username', 'first_name', 'last_name',
-            'is_subscribed', 'recipes', 'recipes_count', 'profile_image'
+            'is_subscribed', 'recipes', 'recipes_count', 'avatar'
         )
 
     def get_is_subscribed(self, obj):
@@ -364,10 +364,10 @@ class SubscriptionSerializer(serializers.ModelSerializer):
         """."""
         return obj.author.recipes.count()
 
-    def get_profile_image(self, obj):
+    def get_avatar(self, obj):
         """."""
         author = obj.author
-        return author.profile_image.url if author.profile_image else None
+        return author.avatar.url if author.avatar else None
 
 
 class SetPasswordSerializer(serializers.Serializer):

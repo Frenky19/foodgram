@@ -43,3 +43,6 @@ webcolors==1.11.1
 yapf==0.32.0
 chardet==5.2.0
 reportlab==4.4.1
+drf-yasg==1.21.10
+inflection==0.5.1
+uritemplate==4.1.1

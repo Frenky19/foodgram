@@ -11,29 +11,29 @@ class UserAdmin(BaseUserAdmin):
 
     model = User
     list_display = (
-        'username', 'profile_image_preview', 'first_name',
+        'username', 'avatar_preview', 'first_name',
         'last_name', 'email'
     )
     list_filter = ('date_joined', 'last_login',
                    'is_staff', 'is_superuser', 'is_active')
-    readonly_fields = ('profile_image_preview', 'date_joined', 'last_login')
+    readonly_fields = ('avatar_preview', 'date_joined', 'last_login')
     search_fields = ('username', 'email', 'first_name', 'last_name')
 
-    def profile_image_preview(self, obj):
+    def avatar_preview(self, obj):
         """
         Отображает изображения профиля пользователя в админке.
 
         Возвращает:
             HTML-тег изображения, если файл существует, или текст-заглушку.
         """
-        if obj.profile_image:
+        if obj.avatar:
             return format_html(
                 ('<img src="{}" style="max-height:'
                  '100px; max-width: 100px;" />'),
-                obj.profile_image.url
+                obj.avatar.url
             )
         return "Нет изображения"
-    profile_image_preview.short_description = 'Фото профиля'
+    avatar_preview.short_description = 'Фото профиля'
 
 
 @admin.register(Subscription)

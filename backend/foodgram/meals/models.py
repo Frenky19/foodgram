@@ -40,7 +40,7 @@ class Ingredient(models.Model):
         unique=True,
         verbose_name='Название ингридиента'
     )
-    unit = models.CharField(
+    measurement_unit = models.CharField(
         max_length=UNIT_LIMIT,
         unique=True,
         choices=UNITS,
@@ -64,7 +64,7 @@ class Ingredient(models.Model):
         Returns:
             str: Склоненная форма единицы измерения
         """
-        unit_forms = self.UNIT_FORMS.get(self.unit, ['', '', ''])
+        unit_forms = self.UNIT_FORMS.get(self.measurement_unit, ['', '', ''])
         n = abs(amount) % 100
         n1 = n % 10
         if 10 < n < 20:
