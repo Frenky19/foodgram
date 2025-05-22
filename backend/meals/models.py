@@ -5,11 +5,11 @@ from django.db import models
 from django.utils.text import Truncator, slugify
 
 from users.models import User
-from utils.constants import (LIMIT_OF_SYMBOLS, INGREDIENT_NAME_LIMIT,
-                             UNIT_LIMIT, TAG_NAME_LIMIT, TAG_SLUG_LIMIT,
-                             UNIT_LIMIT, RECIPE_NAME_LIMIT, DESCRIPTION_LIMIT,
-                             MIN_AMOUNT, MIN_COOK_TIME, MAX_DIGITS_FOR_AMOUNT,
-                             DECIMAL_PLACES_FOR_AMOUNT)
+from utils.constants import (DECIMAL_PLACES_FOR_AMOUNT, DESCRIPTION_LIMIT,
+                             INGREDIENT_NAME_LIMIT, LIMIT_OF_SYMBOLS,
+                             MAX_DIGITS_FOR_AMOUNT, MIN_AMOUNT, MIN_COOK_TIME,
+                             RECIPE_NAME_LIMIT, TAG_NAME_LIMIT, TAG_SLUG_LIMIT,
+                             UNIT_LIMIT)
 
 
 class Ingredient(models.Model):

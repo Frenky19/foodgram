@@ -1,19 +1,28 @@
-from rest_framework import viewsets, permissions, status
+from django_filters import rest_framework as django_filters
+from rest_framework import permissions, status, viewsets
 from rest_framework.decorators import action
 from rest_framework.response import Response
-from api.permissions import IsAuthorOrReadOnly, IsAuthenticatedOrReadOnly
-from api.serializers import (TagSerializer, IngredientSerializer,
-                             RecipeSerializer, CustomUserSerializer,
-                             RecipeMinifiedSerializer, SubscriptionSerializer)
-from meals.models import Tag, Ingredient, Recipe, Tag, Favorite, ShoppingCart
-from users.models import Subscription, User
-from django_filters import rest_framework as django_filters
+
 from api.filters import RecipeFilter
-from api.utils import generate_shopping_list, generate_pdf_response, generate_csv_response, generate_txt_response, generate_shopping_list_text
+from api.permissions import IsAuthenticatedOrReadOnly, IsAuthorOrReadOnly
+from api.serializers import (CustomUserSerializer, IngredientSerializer,
+                             RecipeMinifiedSerializer, RecipeSerializer,
+                             SubscriptionSerializer, TagSerializer)
+from api.utils import (generate_csv_response, generate_pdf_response,
+                       generate_shopping_list, generate_shopping_list_text,
+                       generate_txt_response)
+from meals.models import Favorite, Ingredient, Recipe, ShoppingCart, Tag
+from users.models import Subscription, User
 
 
 class UserViewSet(viewsets.ModelViewSet):
-    """."""
+    """
+    ViewSet для работы с пользователями.
+
+    Поддерживает стандартные CRUD-операции, а также:
+    - Получение данных текущего пользователя
+    - Подписку/отписку на других пользователей
+    """
 
     queryset = User.objects.all()
     serializer_class = CustomUserSerializer
@@ -22,14 +31,19 @@ class UserViewSet(viewsets.ModelViewSet):
     @action(detail=False, methods=['get'],
             permission_classes=[permissions.IsAuthenticated])
     def me(self, request):
-        """."""
+        """Получение профиля текущего аутентифицированного пользователя."""
         serializer = self.get_serializer(request.user)
         return Response(serializer.data)
 
     @action(detail=True, methods=['post', 'delete'],
             permission_classes=[permissions.IsAuthenticated])
     def subscribe(self, request, pk=None):
-        """."""
+        """
+        Управление подписками на пользователей.
+
+        POST: Создание подписки на пользователя
+        DELETE: Удаление подписки на пользователя
+        """
         author = self.get_object()
         subscription = Subscription.objects.filter(
             user=request.user,
@@ -65,7 +79,12 @@ class UserViewSet(viewsets.ModelViewSet):
 
 
 class TagViewSet(viewsets.ReadOnlyModelViewSet):
-    """."""
+    """
+    ViewSet для работы с тегами (только чтение).
+
+    Возвращает список всех тегов, поддерживает поиск по slug.
+    Пагинация отключена.
+    """
 
     queryset = Tag.objects.all()
     serializer_class = TagSerializer
@@ -73,7 +92,12 @@ class TagViewSet(viewsets.ReadOnlyModelViewSet):
 
 
 class IngredientViewSet(viewsets.ReadOnlyModelViewSet):
-    """."""
+    """
+    ViewSet для работы с ингредиентами (только чтение).
+
+    Возвращает список всех ингредиентов, поддерживает поиск по имени.
+    Пагинация отключена.
+    """
 
     queryset = Ingredient.objects.all()
     serializer_class = IngredientSerializer
@@ -82,19 +106,20 @@ class IngredientViewSet(viewsets.ReadOnlyModelViewSet):
 
 class RecipeViewSet(viewsets.ModelViewSet):
     """
-    Получение списка рецептов с возможностью фильтрации.
+    ViewSet для работы с рецептами.
 
-    Параметры запроса:
-    - name - поиск по названию (частичное совпадение, без учета регистра)
-    - author - фильтр по ID автора
-    - tags - фильтр по слагам тегов (можно несколько через &)
-    - is_favorited - показать только избранное
-    - is_in_shopping_cart - показать только в корзине
+    Поддерживает:
+    - CRUD-операции для рецептов
+    - Фильтрацию по различным параметрам
+    - Добавление/удаление в избранное и список покупок
+    - Кастомные действия с рецептами
 
-    Примеры:
-    - /api/recipes/?name=пицца
-    - /api/recipes/?tags=breakfast&tags=dinner
-    - /api/recipes/?author=2&is_favorited=1
+    Фильтрация доступна по параметрам:
+    - name: поиск по названию (регистронезависимый, частичное совпадение)
+    - author: ID автора рецепта
+    - tags: slug тегов (можно несколько через &)
+    - is_favorited: 1/0 для фильтрации избранных рецептов
+    - is_in_shopping_cart: 1/0 для фильтрации рецептов в списке покупок
     """
 
     queryset = Recipe.objects.all()
@@ -104,7 +129,7 @@ class RecipeViewSet(viewsets.ModelViewSet):
     filterset_class = RecipeFilter
 
     def get_queryset(self):
-        """."""
+        """Оптимизация запросов к БД."""
         queryset = super().get_queryset()
         return queryset.select_related('author').prefetch_related(
             'tags',
@@ -113,22 +138,30 @@ class RecipeViewSet(viewsets.ModelViewSet):
         ).distinct()
 
     def perform_create(self, serializer):
-        """."""
+        """Автоматическое назначение текущего пользователя автором рецепта."""
         serializer.save(author=self.request.user)
 
     @action(detail=True, methods=['post', 'delete'],
             permission_classes=[permissions.IsAuthenticated])
     def favorite(self, request, pk=None):
-        """."""
+        """Добавление/удаление рецепта в избранное."""
         return self._change_relation(Favorite, request, pk)
 
     @action(detail=True, methods=['post', 'delete'],
             permission_classes=[permissions.IsAuthenticated])
     def shopping_cart(self, request, pk=None):
-        """."""
+        """Добавление/удаление рецепта в список покупок."""
         return self._change_relation(ShoppingCart, request, pk)
 
     def _change_relation(self, model, request, pk):
+        """
+        Общий метод для управления связями рецептов с пользователем.
+
+        Аргументы:
+        - model: класс модели связи (Favorite или ShoppingCart)
+        - request: объект запроса
+        - pk: ID рецепта
+        """
         recipe = self.get_object()
         user = request.user
         relation = model.objects.filter(user=user, recipe=recipe)
@@ -154,13 +187,24 @@ class RecipeViewSet(viewsets.ModelViewSet):
 
 
 class ShoppingCartViewSet(viewsets.ViewSet):
-    """."""
+    """
+    ViewSet для работы со списком покупок.
+
+    Поддерживает генерацию списка покупок в различных форматах.
+    """
 
     permission_classes = [permissions.IsAuthenticated]
 
     @action(detail=False, methods=['get'])
     def download_shopping_cart(self, request):
-        """."""
+        """
+        Скачивание списка покупок в выбранном формате.
+
+        Доступные форматы (параметр 'format'):
+        - txt: текстовый файл (по умолчанию)
+        - csv: CSV-файл
+        - pdf: PDF-документ
+        """
         format = request.query_params.get('format', 'txt')
         content = generate_shopping_list(request.user)
         text = generate_shopping_list_text(content)

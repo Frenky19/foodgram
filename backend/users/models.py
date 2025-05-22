@@ -1,6 +1,7 @@
 from django.contrib.auth.models import AbstractUser
 from django.db import models
 from django.utils.text import Truncator
+
 from utils.constants import LIMIT_OF_SYMBOLS
 
 
@@ -11,6 +12,7 @@ class User(AbstractUser):
     - Поле для загрузки аватара профиля
     - Кастомные методы строкового представления
     """
+
     username = models.CharField(
         max_length=64,
         unique=True,
