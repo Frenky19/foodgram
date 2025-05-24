@@ -38,11 +38,10 @@ class Ingredient(models.Model):
     name = models.CharField(
         max_length=INGREDIENT_NAME_LIMIT,
         unique=True,
-        verbose_name='Название ингридиента'
+        verbose_name='Название ингредиента'
     )
     measurement_unit = models.CharField(
         max_length=UNIT_LIMIT,
-        unique=True,
         choices=UNITS,
         verbose_name='Единица измерения'
     )
@@ -237,7 +236,7 @@ class ShoppingCart(models.Model):
         User,
         on_delete=models.CASCADE,
         verbose_name='Автор',
-        related_name='shopping_carts'
+        related_name='in_shopping_cart'
     )
     recipe = models.ForeignKey(
         Recipe,

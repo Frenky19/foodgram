@@ -105,8 +105,8 @@ class RecipeMinifiedSerializer(serializers.ModelSerializer):
 class CustomUserSerializer(serializers.ModelSerializer):
     """Сериализатор для модели пользователя с расширенными полями."""
 
-    # is_subscribed = serializers.SerializerMethodField()
-    # avatar = Base64ImageField(required=False, allow_null=True)
+    is_subscribed = serializers.SerializerMethodField()
+    avatar = Base64ImageField(required=False, allow_null=True)
 
     class Meta:
         """Мета-класс для CustomUserSerializer."""
@@ -114,7 +114,7 @@ class CustomUserSerializer(serializers.ModelSerializer):
         model = User
         fields = (
             'id', 'email', 'username', 'first_name',
-            'last_name'  # , 'is_subscribed', 'avatar'
+            'last_name', 'is_subscribed', 'avatar'
         )
 
     def get_is_subscribed(self, obj):
@@ -354,7 +354,7 @@ class RecipeSerializer(serializers.ModelSerializer):
                 instance.favorites.filter(user=request.user).exists()
             )
             representation['is_in_shopping_cart'] = (
-                instance.shopping_carts.filter(user=request.user).exists()
+                instance.in_shopping_cart.filter(user=request.user).exists()
             )
         return representation
 

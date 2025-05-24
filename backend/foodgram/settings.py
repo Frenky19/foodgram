@@ -27,11 +27,11 @@ INSTALLED_APPS = [
     'django.contrib.staticfiles',
     'debug_toolbar',
     'django_bootstrap5',
-    'rest_framework.authtoken',
     'rest_framework',
+    'rest_framework.authtoken',
+    'djoser',
     'django_filters',
     'drf_yasg',
-    'djoser',
     'api.apps.ApiConfig',
     'meals.apps.MealsConfig',
     'users.apps.UsersConfig',
@@ -71,24 +71,24 @@ WSGI_APPLICATION = 'foodgram.wsgi.application'
 
 
 # Установите в файле .env переменную SQLITE=True, чтобы использовать бд Sqlite
-if os.getenv('SQLITE', 'False') == 'True':
-    DATABASES = {
-        'default': {
-            'ENGINE': 'django.db.backends.sqlite3',
-            'NAME': BASE_DIR / 'db.sqlite3',
-        }
+# if os.getenv('SQLITE', 'False') == 'True':
+DATABASES = {
+    'default': {
+        'ENGINE': 'django.db.backends.sqlite3',
+        'NAME': BASE_DIR / 'db.sqlite3',
     }
-else:
-    DATABASES = {
-        'default': {
-            'ENGINE': 'django.db.backends.postgresql',
-            'NAME': os.getenv('POSTGRES_DB', 'django'),
-            'USER': os.getenv('POSTGRES_USER', 'django'),
-            'PASSWORD': os.getenv('POSTGRES_PASSWORD', ''),
-            'HOST': os.getenv('DB_HOST', ''),
-            'PORT': os.getenv('DB_PORT', 5432),
-        }
-    }
+}
+# else:
+#     DATABASES = {
+#         'default': {
+#             'ENGINE': 'django.db.backends.postgresql',
+#             'NAME': os.getenv('POSTGRES_DB', 'django'),
+#             'USER': os.getenv('POSTGRES_USER', 'django'),
+#             'PASSWORD': os.getenv('POSTGRES_PASSWORD', ''),
+#             'HOST': os.getenv('DB_HOST', ''),
+#             'PORT': os.getenv('DB_PORT', 5432),
+#         }
+#     }
 
 
 AUTH_PASSWORD_VALIDATORS = [
@@ -118,7 +118,7 @@ USE_TZ = True
 
 REST_FRAMEWORK = {
     'DEFAULT_PERMISSION_CLASSES': [
-        'rest_framework.permissions.IsAuthenticatedOrReadOnly',
+        'rest_framework.permissions.AllowAny',
     ],
 
     'DEFAULT_AUTHENTICATION_CLASSES': [
@@ -133,20 +133,22 @@ REST_FRAMEWORK = {
 
 DJOSER = {
     'LOGIN_FIELD': 'email',
-    'HIDE_USERS': False,
+    'USER_CREATE_PASSWORD_RETYPE': True,
     'PERMISSIONS': {
         'current_user': ['api.permissions.AllowAny'],
         'user': ['rest_framework.permissions.AllowAny'],
         'user_list': ['rest_framework.permissions.AllowAny'],
     },
     'SERIALIZERS': {
+        'user_create': 'api.serializers.CustomUserSerializer',
         'user': 'api.serializers.CustomUserSerializer',
         'current_user': 'api.serializers.CustomUserSerializer',
-    }
+    },
+    'HIDE_USERS': False,
 }
 
 STATIC_URL = '/static/'
-STATIC_ROOT = BASE_DIR / 'static'
+STATIC_ROOT = BASE_DIR / 'collected_static'
 
 MEDIA_URL = '/media/'
 MEDIA_ROOT = BASE_DIR / 'media'
