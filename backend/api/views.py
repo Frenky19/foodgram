@@ -40,12 +40,15 @@ User = get_user_model()
 
 
 class UserViewSet(viewsets.ModelViewSet):
+    """ViewSet для операций с пользователями."""
+
     queryset = User.objects.all()
     serializer_class = UserSerializer
     pagination_class = CustomPagination
     permission_classes = [AllowAny]
 
     def get_serializer_class(self):
+        """Возвращает соответствующий сериализатор в зависимости от действия."""
         if self.action == 'create':
             return UserCreateSerializer
         return super().get_serializer_class()
@@ -58,7 +61,7 @@ class UserViewSet(viewsets.ModelViewSet):
 
     @action(detail=False, methods=['post'], permission_classes=[IsAuthenticated])
     def set_password(self, request):
-        """Изменение пароля."""
+        """Изменение пароля текущего пользователя."""
         serializer = SetPasswordSerializer(data=request.data, context={'user': request.user})
         serializer.is_valid(raise_exception=True)
         request.user.set_password(serializer.validated_data['new_password'])
@@ -67,7 +70,7 @@ class UserViewSet(viewsets.ModelViewSet):
 
     @action(detail=False, methods=['put'], permission_classes=[IsAuthenticated], parser_classes=[MultiPartParser, FormParser])
     def avatar(self, request):
-        """Обновление аватара."""
+        """Обновление аватара текущего пользователя."""
         serializer = SetAvatarSerializer(request.user, data=request.data)
         serializer.is_valid(raise_exception=True)
         serializer.save()
@@ -75,7 +78,7 @@ class UserViewSet(viewsets.ModelViewSet):
 
     @avatar.mapping.delete
     def delete_avatar(self, request):
-        """Удаление аватара."""
+        """Удаление аватара текущего пользователя."""
         request.user.avatar.delete()
         request.user.avatar = None
         request.user.save()
@@ -100,25 +103,40 @@ class UserViewSet(viewsets.ModelViewSet):
             subscription.delete()
             return Response(status=status.HTTP_204_NO_CONTENT)
 
-    @action(detail=False, methods=['get'], permission_classes=[IsAuthenticated])
+    @action(
+        detail=False, 
+        methods=['get'],
+        permission_classes=[IsAuthenticated],
+        url_path='subscriptions',
+        url_name='subscriptions'
+    )
     def subscriptions(self, request):
-        """Список подписок с рецептами."""
-        subscriptions = User.objects.filter(followers__user=request.user)
+        """Получение списка подписок с рецептами."""
+        user = request.user
+        subscriptions = User.objects.filter(followers__user=user)
         page = self.paginate_queryset(subscriptions)
         recipes_limit = request.query_params.get('recipes_limit')
         context = self.get_serializer_context()
         if recipes_limit:
             context['recipes_limit'] = recipes_limit
-        
+        if page is not None:
+            serializer = UserWithRecipesSerializer(
+                page, 
+                many=True, 
+                context=context
+            )
+            return self.get_paginated_response(serializer.data)
         serializer = UserWithRecipesSerializer(
-            page, 
+            subscriptions, 
             many=True, 
             context=context
         )
-        return self.get_paginated_response(serializer.data)
+        return Response(serializer.data)
 
 
 class TagViewSet(viewsets.ReadOnlyModelViewSet):
+    """ViewSet для операций с тегами (только чтение)."""
+
     queryset = Tag.objects.all()
     serializer_class = TagSerializer
     permission_classes = [AllowAny]
@@ -126,6 +144,8 @@ class TagViewSet(viewsets.ReadOnlyModelViewSet):
 
 
 class IngredientViewSet(viewsets.ReadOnlyModelViewSet):
+    """ViewSet для операций с ингредиентами (только чтение)."""
+
     queryset = Ingredient.objects.all()
     serializer_class = IngredientSerializer
     permission_classes = [AllowAny]
@@ -143,6 +163,7 @@ class IngredientViewSet(viewsets.ReadOnlyModelViewSet):
 class RecipeFilter(DjangoFilterBackend):
     """Кастомный фильтр для рецептов."""
     def filter_queryset(self, request, queryset, view):
+        """Фильтрация рецептов по параметрам запроса."""
         author_id = request.query_params.get('author')
         if author_id:
             queryset = queryset.filter(author_id=author_id)
@@ -157,23 +178,25 @@ class RecipeFilter(DjangoFilterBackend):
         if is_in_shopping_cart and request.user.is_authenticated:
             if is_in_shopping_cart == '1':
                 queryset = queryset.filter(shopping_carts__user=request.user)
-        
         return queryset
 
 
 class RecipeViewSet(viewsets.ModelViewSet):
+    """ViewSet для операций с рецептами."""
+
     queryset = Recipe.objects.all()
     permission_classes = [IsAuthenticatedOrReadOnly]
     pagination_class = CustomPagination
     filter_backends = [RecipeFilter]
 
     def get_serializer_class(self):
+        """Возвращает соответствующий сериализатор в зависимости от действия."""    
         if self.action in ['create', 'update', 'partial_update']:
             return RecipeCreateUpdateSerializer
         return RecipeSerializer
     
     def perform_update(self, serializer):
-        """Автоматически обновляем автора рецепта."""
+        """Автоматически обновляет автора рецепта при изменении."""
         serializer.save(author=self.request.user)
 
     @action(detail=True, methods=['post', 'delete'])
@@ -191,9 +214,17 @@ class RecipeViewSet(viewsets.ModelViewSet):
         )
 
     def _handle_relation_action(self, request, pk, model, relation_name):
+        """
+        Обработчик для действий с отношениями (избранное/корзина).
+        
+        Args:
+            request: Объект запроса
+            pk: ID рецепта
+            model: Модель отношения (Favorite или ShoppingCart)
+            relation_name: Название отношения для сообщений
+        """
         recipe = get_object_or_404(Recipe, pk=pk)
         user = request.user
-        
         if request.method == 'POST':
             if model.objects.filter(user=user, recipe=recipe).exists():
                 return Response(
@@ -206,7 +237,6 @@ class RecipeViewSet(viewsets.ModelViewSet):
                 context=self.get_serializer_context()
             )
             return Response(serializer.data, status=status.HTTP_201_CREATED)
-        
         elif request.method == 'DELETE':
             relation = model.objects.filter(user=user, recipe=recipe)
             if not relation.exists():
@@ -219,7 +249,7 @@ class RecipeViewSet(viewsets.ModelViewSet):
 
     @action(detail=False, methods=['get'], permission_classes=[IsAuthenticated])
     def download_shopping_cart(self, request):
-        """Скачивание списка покупок в формате TXT."""
+        """Генерация и скачивание списка покупок в формате TXT."""
         ingredients = RecipeIngredient.objects.filter(
             recipe__shopping_carts__user=request.user
         ).values(
@@ -242,7 +272,7 @@ class RecipeViewSet(viewsets.ModelViewSet):
 
     @action(detail=True, methods=['get'], url_path='get-link')
     def get_link(self, request, pk=None):
-        """Генерация короткой ссылки на рецепт."""
+        """Генерация короткой ссылки на конкретный рецепт."""
         recipe = get_object_or_404(Recipe, pk=pk)
         short_link = request.build_absolute_uri(
             f"/api/recipes/{recipe.id}/"
@@ -254,11 +284,13 @@ class RecipeViewSet(viewsets.ModelViewSet):
 
 
 class TokenCreateViewSet(mixins.CreateModelMixin, viewsets.GenericViewSet):
-    """Создание JWT токена."""
+    """ViewSet для создания JWT токена."""
+
     serializer_class = TokenCreateSerializer
     permission_classes = [AllowAny]
 
     def create(self, request, *args, **kwargs):
+        """Создает JWT токен для аутентификации."""
         serializer = self.get_serializer(data=request.data)
         serializer.is_valid(raise_exception=True)
         return Response(
@@ -268,8 +300,10 @@ class TokenCreateViewSet(mixins.CreateModelMixin, viewsets.GenericViewSet):
 
 
 class TokenDestroyViewSet(mixins.DestroyModelMixin, viewsets.GenericViewSet):
-    """Удаление JWT токена."""
+    """ViewSet для удаления JWT токена (выход из системы)."""
+
     permission_classes = [IsAuthenticated]
 
     def destroy(self, request, *args, **kwargs):
+        """Удаляет JWT токен текущего пользователя."""
         return Response(status=status.HTTP_204_NO_CONTENT)
