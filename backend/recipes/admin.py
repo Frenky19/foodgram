@@ -69,7 +69,7 @@ class RecipeAdmin(admin.ModelAdmin):
         * prefetch_related для тегов (множественные связи)
         """
         return super().get_queryset(request).annotate(
-            favorite_count=Count('favorite')
+            favorite_count=Count('favorites')
         ).select_related('author').prefetch_related('tags')
 
     def favorite_count(self, obj):
