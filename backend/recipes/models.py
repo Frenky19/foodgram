@@ -155,7 +155,7 @@ class Recipe(models.Model):
         validators=[MinValueValidator(
             MIN_COOK_TIME,
             f'Время готовки не может быть менее {MIN_COOK_TIME} минут(ы)'
-        ),],
+        ), ],
         verbose_name='Время приготовления в минутах',
     )
 
