@@ -1,27 +1,37 @@
 import base64
-
-from django.contrib.auth import get_user_model
-from django.urls import reverse
-from django.core.files.uploadedfile import SimpleUploadedFile
-from rest_framework import status
-from rest_framework.test import APITestCase, APIClient
-from rest_framework.authtoken.models import Token
-from django.test import override_settings
-from PIL import Image
 from io import BytesIO
 
+from django.contrib.auth import get_user_model
+from django.test import override_settings
+from django.urls import reverse
+from PIL import Image
+from rest_framework import status
+from rest_framework.authtoken.models import Token
+from rest_framework.test import APIClient, APITestCase
+
+from recipes.models import (Favorite, Ingredient, Recipe, RecipeIngredient,
+                            RecipeTags, ShoppingCart, Tag)
 from users.models import Subscription
-from recipes.models import (
-    Ingredient, Tag, Recipe, RecipeIngredient, RecipeTags,
-    Favorite, ShoppingCart
-)
 from utils.constants import PAGE_SIZE
 
 User = get_user_model()
 
 
 class TestSettingsMixin:
+    """
+    Настройка тестового окружения.
+
+    - Переопределяет настройки пагинации REST Framework
+    - Активирует новые настройки
+    """
+
     def setUp(self):
+        """
+        Настройка тестового окружения.
+
+        - Переопределяет настройки пагинации REST Framework
+        - Активирует новые настройки
+        """
         super().setUp()
         self.settings = override_settings(
             REST_FRAMEWORK={
@@ -30,14 +40,30 @@ class TestSettingsMixin:
             }
         )
         self.settings.enable()
-        
+
     def tearDown(self):
+        """Очистка после теста."""
         self.settings.disable()
         super().tearDown()
 
 
 class UserAPITests(APITestCase, TestSettingsMixin):
+    """
+    Тесты API для работы с пользователями.
+
+    - Регистрация пользователя
+    - Получение профиля текущего пользователя
+    - Смена пароля
+    - Подписки на других пользователей
+    """
+
     def setUp(self):
+        """
+        Подготовка данных для тестов.
+
+        - Создание тестовых пользователей
+        - Инициализация API клиента
+        """
         super().setUp()
         self.user = User.objects.create_user(
             email='test@example.com',
@@ -54,6 +80,14 @@ class UserAPITests(APITestCase, TestSettingsMixin):
         self.client = APIClient()
 
     def test_user_registration(self):
+        """
+        Тест регистрации нового пользователя.
+
+        - Проверка успешного создания пользователя (201 Created)
+        - Проверка увеличения счетчика пользователей
+        - Проверка корректности возвращаемых данных
+        - Проверка отсутствия пароля в ответе
+        """
         url = reverse('api:user-list')
         data = {
             'email': 'new@example.com',
@@ -69,6 +103,12 @@ class UserAPITests(APITestCase, TestSettingsMixin):
         self.assertNotIn('password', response.data)
 
     def test_get_current_user(self):
+        """
+        Тест получения профиля текущего пользователя.
+
+        - Проверка доступа аутентифицированного пользователя
+        - Проверка корректности возвращаемых данных
+        """
         self.client.force_authenticate(user=self.user)
         url = reverse('api:user-me')
         response = self.client.get(url)
@@ -76,6 +116,12 @@ class UserAPITests(APITestCase, TestSettingsMixin):
         self.assertEqual(response.data['email'], self.user.email)
 
     def test_set_password(self):
+        """
+        Тест смены пароля пользователя.
+
+        - Проверка успешной смены пароля (204 No Content)
+        - Проверка действительности нового пароля
+        """
         self.client.force_authenticate(user=self.user)
         url = reverse('api:user-set-password')
         data = {
@@ -88,16 +134,20 @@ class UserAPITests(APITestCase, TestSettingsMixin):
         self.assertTrue(self.user.check_password('newtestpassword'))
 
     def test_subscribe(self):
+        """
+        Тест подписки и отписки от пользователя.
+
+        - Проверка создания подписки (201 Created)
+        - Проверка существования подписки в базе
+        - Проверка удаления подписки (204 No Content)
+        - Проверка отсутствия подписки после удаления
+        """
         self.client.force_authenticate(user=self.user)
         url = reverse('api:users-subscribe', kwargs={'pk': self.other_user.id})
-        
-        # Подписаться
         response = self.client.post(url)
         self.assertEqual(response.status_code, status.HTTP_201_CREATED)
         self.assertTrue(Subscription.objects.filter(
             user=self.user, author=self.other_user).exists())
-        
-        # Отписаться
         response = self.client.delete(url)
         self.assertEqual(response.status_code, status.HTTP_204_NO_CONTENT)
         self.assertFalse(Subscription.objects.filter(
@@ -105,7 +155,20 @@ class UserAPITests(APITestCase, TestSettingsMixin):
 
 
 class AuthAPITests(APITestCase, TestSettingsMixin):
+    """
+    Тесты API аутентификации.
+
+    - Получение токена авторизации
+    - Выход из системы (удаление токена)
+    """
+
     def setUp(self):
+        """
+        Подготовка данных для тестов.
+
+        - Создание тестового пользователя
+        - Инициализация API клиента
+        """
         super().setUp()
         self.user = User.objects.create_user(
             email='test@example.com',
@@ -115,7 +178,12 @@ class AuthAPITests(APITestCase, TestSettingsMixin):
         self.client = APIClient()
 
     def test_token_obtain(self):
-        # Используем фактический путь из urls.py
+        """
+        Тест получения токена авторизации.
+
+        - Проверка успешной аутентификации (200 OK)
+        - Проверка наличия токена в ответе
+        """
         url = '/api/auth/token/login/'
         data = {
             'email': 'test@example.com',
@@ -126,9 +194,14 @@ class AuthAPITests(APITestCase, TestSettingsMixin):
         self.assertIn('auth_token', response.data)
 
     def test_token_logout(self):
+        """
+        Тест выхода из системы.
+
+        - Проверка успешного удаления токена (204 No Content)
+        - Проверка отсутствия токена в базе после выхода
+        """
         token = Token.objects.create(user=self.user)
         self.client.credentials(HTTP_AUTHORIZATION=f'Token {token.key}')
-        # Используем фактический путь из urls.py
         url = '/api/auth/token/logout/'
         response = self.client.post(url)
         self.assertEqual(response.status_code, status.HTTP_204_NO_CONTENT)
@@ -136,7 +209,24 @@ class AuthAPITests(APITestCase, TestSettingsMixin):
 
 
 class RecipeAPITests(APITestCase, TestSettingsMixin):
+    """
+    Тесты API для работы с рецептами.
+
+    - Создание, обновление и удаление рецептов
+    - Работа с избранным и списком покупок
+    - Скачивание списка покупок
+    - Генерация короткой ссылки
+    """
+
     def setUp(self):
+        """
+        Подготовка данных для тестов.
+
+        - Создание тестовых пользователей
+        - Создание ингредиентов и тегов
+        - Создание тестового рецепта
+        - Аутентификация пользователя
+        """
         super().setUp()
         self.user = User.objects.create_user(
             email='chef@example.com',
@@ -148,8 +238,6 @@ class RecipeAPITests(APITestCase, TestSettingsMixin):
             username='other',
             password='otherpassword'
         )
-        
-        # Создаем ингредиенты
         self.ingredient1 = Ingredient.objects.create(
             name='Flour',
             measurement_unit='g'
@@ -158,16 +246,12 @@ class RecipeAPITests(APITestCase, TestSettingsMixin):
             name='Sugar',
             measurement_unit='g'
         )
-        
-        # Создаем теги
         self.tag1 = Tag.objects.create(name='Breakfast', slug='breakfast')
         self.tag2 = Tag.objects.create(name='Dessert', slug='dessert')
-        
-        # Создаем рецепт
         self.recipe = Recipe.objects.create(
             author=self.user,
-            name='Pancakes',
-            text='Delicious pancakes recipe',
+            name='Блины',
+            text='Рецепт вкусных блинов',
             cooking_time=30
         )
         RecipeTags.objects.create(recipe=self.recipe, tag=self.tag1)
@@ -176,18 +260,26 @@ class RecipeAPITests(APITestCase, TestSettingsMixin):
             ingredient=self.ingredient1,
             amount=200
         )
-        
         self.client = APIClient()
         self.client.force_authenticate(user=self.user)
 
     def create_test_image_base64(self):
-        """Создает валидное тестовое изображение в base64"""
+        """Создает валидное тестовое изображение в base64."""
         image = BytesIO()
         Image.new('RGB', (100, 100)).save(image, 'JPEG')
         image.seek(0)
-        return f"data:image/jpeg;base64,{base64.b64encode(image.getvalue()).decode('utf-8')}"
+        return (
+            f"data:image/jpeg;base64,"
+            f"{base64.b64encode(image.getvalue()).decode('utf-8')}"
+        )
 
     def test_create_recipe(self):
+        """
+        Тест создания нового рецепта.
+
+        - Проверка успешного создания (201 Created)
+        - Проверка увеличения счетчика рецептов
+        """
         url = reverse('api:recipes-list')
         data = {
             'name': 'New Recipe',
@@ -201,14 +293,20 @@ class RecipeAPITests(APITestCase, TestSettingsMixin):
             'image': self.create_test_image_base64()
         }
         response = self.client.post(url, data, format='json')
-        
         if response.status_code != status.HTTP_201_CREATED:
-            print("Ошибка создания рецепта:", response.data)
-            
+            print('Ошибка создания рецепта:', response.data)
         self.assertEqual(response.status_code, status.HTTP_201_CREATED)
         self.assertEqual(Recipe.objects.count(), 2)
 
     def test_update_recipe(self):
+        """
+        Тест обновления существующего рецепта.
+
+        - Проверка успешного обновления (200 OK)
+        - Проверка изменения названия
+        - Проверка обновления тегов
+        - Проверка обновления ингредиентов
+        """
         url = reverse('api:recipes-detail', kwargs={'pk': self.recipe.id})
         data = {
             'name': 'Updated Pancakes',
@@ -223,48 +321,72 @@ class RecipeAPITests(APITestCase, TestSettingsMixin):
         self.assertEqual(self.recipe.name, 'Updated Pancakes')
         self.assertEqual(self.recipe.tags.count(), 1)
         self.assertEqual(self.recipe.ingredient_list.count(), 1)
-        self.assertEqual(self.recipe.ingredient_list.first().ingredient, self.ingredient2)
+        self.assertEqual(
+            self.recipe.ingredient_list.first().ingredient, self.ingredient2
+        )
 
     def test_delete_recipe(self):
+        """
+        Тест удаления рецепта.
+
+        - Проверка успешного удаления (204 No Content)
+        - Проверка уменьшения счетчика рецептов
+        """
         url = reverse('api:recipes-detail', kwargs={'pk': self.recipe.id})
         response = self.client.delete(url)
         self.assertEqual(response.status_code, status.HTTP_204_NO_CONTENT)
         self.assertEqual(Recipe.objects.count(), 0)
 
     def test_add_to_favorites(self):
+        """
+        Тест добавления и удаления рецепта из избранного.
+
+        - Проверка добавления в избранное (201 Created)
+        - Проверка существования в избранном
+        - Проверка удаления из избранного (204 No Content)
+        - Проверка отсутствия в избранном после удаления
+        """
         url = reverse('api:recipes-favorite', kwargs={'pk': self.recipe.id})
-        
-        # Добавить в избранное
         response = self.client.post(url)
         self.assertEqual(response.status_code, status.HTTP_201_CREATED)
         self.assertTrue(Favorite.objects.filter(
             user=self.user, recipe=self.recipe).exists())
-        
-        # Удалить из избранного
         response = self.client.delete(url)
         self.assertEqual(response.status_code, status.HTTP_204_NO_CONTENT)
         self.assertFalse(Favorite.objects.filter(
             user=self.user, recipe=self.recipe).exists())
 
     def test_add_to_shopping_cart(self):
-        url = reverse('api:recipes-shopping-cart', kwargs={'pk': self.recipe.id})
-        
-        # Добавить в корзину
+        """
+        Тест добавления и удаления рецепта из списка покупок.
+
+        - Проверка добавления в список покупок (201 Created)
+        - Проверка существования в списке покупок
+        - Проверка удаления из списка покупок (204 No Content)
+        - Проверка отсутствия в списке покупок после удаления
+        """
+        url = reverse(
+            'api:recipes-shopping-cart', kwargs={'pk': self.recipe.id}
+        )
         response = self.client.post(url)
         self.assertEqual(response.status_code, status.HTTP_201_CREATED)
         self.assertTrue(ShoppingCart.objects.filter(
             user=self.user, recipe=self.recipe).exists())
-        
-        # Удалить из корзины
         response = self.client.delete(url)
         self.assertEqual(response.status_code, status.HTTP_204_NO_CONTENT)
         self.assertFalse(ShoppingCart.objects.filter(
             user=self.user, recipe=self.recipe).exists())
 
     def test_download_shopping_cart(self):
-        # Добавляем рецепт в корзину
+        """
+        Тест скачивания списка покупок.
+
+        - Проверка успешного запроса (200 OK)
+        - Проверка типа контента (text/plain)
+        - Проверка наличия ингредиентов в содержимом
+        - Проверка корректного количества ингредиентов
+        """
         ShoppingCart.objects.create(user=self.user, recipe=self.recipe)
-        
         url = reverse('api:recipes-download-shopping-cart')
         response = self.client.get(url)
         self.assertEqual(response.status_code, status.HTTP_200_OK)
@@ -274,6 +396,13 @@ class RecipeAPITests(APITestCase, TestSettingsMixin):
         self.assertIn('200', content)
 
     def test_get_recipe_short_link(self):
+        """
+        Тест получения короткой ссылки на рецепт.
+
+        - Проверка успешного запроса (200 OK)
+        - Проверка наличия поля 'short_link' в ответе
+        - Проверка формата ссылки (начинается с http)
+        """
         url = reverse('api:recipes-get-link', kwargs={'pk': self.recipe.id})
         response = self.client.get(url)
         self.assertEqual(response.status_code, status.HTTP_200_OK)
@@ -282,7 +411,22 @@ class RecipeAPITests(APITestCase, TestSettingsMixin):
 
 
 class IngredientTagAPITests(APITestCase, TestSettingsMixin):
+    """
+    Тесты API для работы с ингредиентами и тегами.
+
+    - Получение списка ингредиентов
+    - Фильтрация ингредиентов
+    - Получение списка тегов
+    - Получение детальной информации о теге
+    """
+
     def setUp(self):
+        """
+        Подготовка данных для тестов.
+
+        - Создание тестовых ингредиентов
+        - Создание тегов
+        """
         super().setUp()
         self.ingredient1 = Ingredient.objects.create(
             name='Salt',
@@ -296,17 +440,29 @@ class IngredientTagAPITests(APITestCase, TestSettingsMixin):
         self.client = APIClient()
 
     def test_ingredient_list(self):
+        """
+        Тест получения списка ингредиентов.
+
+        - Проверка успешного запроса (200 OK)
+        - Проверка количества возвращаемых ингредиентов
+        - Проверка наличия всех созданных ингредиентов
+        """
         url = reverse('api:ingredients-list')
         response = self.client.get(url)
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertEqual(len(response.data), 2)
-        
-        # Проверяем наличие обоих ингредиентов
         ingredient_names = [i['name'] for i in response.data]
         self.assertIn('Salt', ingredient_names)
         self.assertIn('Pepper', ingredient_names)
 
     def test_ingredient_filter(self):
+        """
+        Тест фильтрации ингредиентов по имени.
+
+        - Проверка успешного запроса (200 OK)
+        - Проверка количества результатов после фильтрации
+        - Проверка корректности отфильтрованного ингредиента
+        """
         url = reverse('api:ingredients-list') + '?name=salt'
         response = self.client.get(url)
         self.assertEqual(response.status_code, status.HTTP_200_OK)
@@ -314,6 +470,13 @@ class IngredientTagAPITests(APITestCase, TestSettingsMixin):
         self.assertEqual(response.data[0]['name'], 'Salt')
 
     def test_tag_list(self):
+        """
+        Тест получения списка тегов.
+
+        - Проверка успешного запроса (200 OK)
+        - Проверка количества возвращаемых тегов
+        - Проверка корректности данных тега
+        """
         url = reverse('api:tags-list')
         response = self.client.get(url)
         self.assertEqual(response.status_code, status.HTTP_200_OK)
@@ -321,6 +484,12 @@ class IngredientTagAPITests(APITestCase, TestSettingsMixin):
         self.assertEqual(response.data[0]['name'], 'Spicy')
 
     def test_tag_detail(self):
+        """
+        Тест получения детальной информации о теге.
+
+        - Проверка успешного запроса (200 OK)
+        - Проверка корректности данных тега
+        """
         url = reverse('api:tags-detail', kwargs={'pk': self.tag.id})
         response = self.client.get(url)
         self.assertEqual(response.status_code, status.HTTP_200_OK)
@@ -328,23 +497,38 @@ class IngredientTagAPITests(APITestCase, TestSettingsMixin):
 
 
 class FilterTests(APITestCase, TestSettingsMixin):
+    """
+    Тесты фильтрации рецептов.
+
+    - Фильтрация по тегам
+    - Фильтрация по автору
+    - Фильтрация по избранному
+    """
+
     def setUp(self):
+        """
+        Подготовка данных для тестов.
+
+        - Создание пользователя
+        - Создание ингредиентов и тегов
+        - Создание тестовых рецептов
+        """
         super().setUp()
         self.user = User.objects.create_user(
             email='chef@example.com',
             username='chef',
             password='chefpassword'
         )
-        
-        # Создаем ингредиенты
-        self.flour = Ingredient.objects.create(name='Flour', measurement_unit='g')
-        self.sugar = Ingredient.objects.create(name='Sugar', measurement_unit='g')
-        
-        # Создаем теги
-        self.breakfast_tag = Tag.objects.create(name='Breakfast', slug='breakfast')
+        self.flour = Ingredient.objects.create(
+            name='Flour', measurement_unit='g'
+        )
+        self.sugar = Ingredient.objects.create(
+            name='Sugar', measurement_unit='g'
+        )
+        self.breakfast_tag = Tag.objects.create(
+            name='Breakfast', slug='breakfast'
+        )
         self.dessert_tag = Tag.objects.create(name='Dessert', slug='dessert')
-        
-        # Создаем рецепты
         self.recipe1 = Recipe.objects.create(
             author=self.user,
             name='Pancakes',
@@ -357,11 +541,10 @@ class FilterTests(APITestCase, TestSettingsMixin):
             ingredient=self.flour,
             amount=200
         )
-        
         self.recipe2 = Recipe.objects.create(
             author=self.user,
-            name='Cake',
-            text='Delicious cake',
+            name='Торт',
+            text='Вкусный торт',
             cooking_time=60
         )
         self.recipe2.tags.add(self.dessert_tag)
@@ -370,16 +553,22 @@ class FilterTests(APITestCase, TestSettingsMixin):
             ingredient=self.sugar,
             amount=100
         )
-        
         self.client = APIClient()
 
     def get_results(self, response):
-        """Возвращает результаты независимо от формата ответа"""
+        """Возвращает результаты независимо от формата ответа."""
         if isinstance(response.data, dict) and 'results' in response.data:
             return response.data['results']
         return response.data
 
     def test_filter_by_tag(self):
+        """
+        Тест фильтрации рецептов по тегу.
+
+        - Проверка успешного запроса (200 OK)
+        - Проверка количества отфильтрованных рецептов
+        - Проверка корректности отфильтрованных рецептов
+        """
         url = reverse('api:recipes-list') + f'?tags={self.breakfast_tag.slug}'
         response = self.client.get(url)
         self.assertEqual(response.status_code, status.HTTP_200_OK)
@@ -388,6 +577,12 @@ class FilterTests(APITestCase, TestSettingsMixin):
         self.assertEqual(results[0]['name'], 'Pancakes')
 
     def test_filter_by_author(self):
+        """
+        Тест фильтрации рецептов по автору.
+
+        - Проверка успешного запроса (200 OK)
+        - Проверка количества рецептов автора
+        """
         url = reverse('api:recipes-list') + f'?author={self.user.id}'
         response = self.client.get(url)
         self.assertEqual(response.status_code, status.HTTP_200_OK)
@@ -395,10 +590,15 @@ class FilterTests(APITestCase, TestSettingsMixin):
         self.assertEqual(len(results), 2)
 
     def test_filter_favorites(self):
-        # Авторизуем пользователя и добавляем рецепт в избранное
+        """
+        Тест фильтрации избранных рецептов.
+
+        - Проверка успешного запроса (200 OK)
+        - Проверка количества избранных рецептов
+        - Проверка корректности отфильтрованных рецептов
+        """
         self.client.force_authenticate(user=self.user)
         Favorite.objects.create(user=self.user, recipe=self.recipe1)
-        
         url = reverse('api:recipes-list') + '?is_favorited=1'
         response = self.client.get(url)
         self.assertEqual(response.status_code, status.HTTP_200_OK)
