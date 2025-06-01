@@ -2,13 +2,9 @@ from django.contrib.auth.models import AbstractUser
 from django.db import models
 from django.utils.text import Truncator
 
-from utils.constants import (
-    EMAIL_LIMIT,
-    FIRST_NAME_LIMIT,
-    LAST_NAME_LIMIT,
-    LIMIT_OF_SYMBOLS,
-    USERNAME_LIMIT
-)
+from utils.constants import (EMAIL_LIMIT, FIRST_NAME_LIMIT, LAST_NAME_LIMIT,
+                             LIMIT_OF_SYMBOLS, USERNAME_LIMIT)
+
 
 # надо добавить валидацию логина
 class User(AbstractUser):
@@ -52,6 +48,7 @@ class User(AbstractUser):
 
     class Meta:
         """Мета-класс для настройки модели пользователя."""
+
         ordering = ('username',)
         verbose_name = 'Пользователь'
         verbose_name_plural = 'Пользователи'
@@ -72,6 +69,7 @@ class Subscription(models.Model):
     уникальности связи пользователей. Запрещает подписку на самого себя на
     уровне БД.
     """
+
     user = models.ForeignKey(
         User,
         on_delete=models.CASCADE,
@@ -106,7 +104,8 @@ class Subscription(models.Model):
             с обрезанными именами до LIMIT_OF_SYMBOLS
         """
         return (
-            f'Пользователь {Truncator(self.user.username).words(LIMIT_OF_SYMBOLS)}'
-            'подписан на пользователя'
+            'Пользователь '
+            f'{Truncator(self.user.username).words(LIMIT_OF_SYMBOLS)}'
+            'подписан на пользователя '
             f'{Truncator(self.author.username).words(LIMIT_OF_SYMBOLS)}'
         )

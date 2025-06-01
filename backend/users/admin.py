@@ -5,7 +5,6 @@ from django.utils.html import format_html
 
 from users.models import Subscription
 
-
 User = get_user_model()
 
 

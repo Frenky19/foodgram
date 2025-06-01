@@ -6,9 +6,7 @@ from django.utils.text import Truncator, slugify
 from utils.constants import (
     INGREDIENT_NAME_LIMIT, LIMIT_OF_SYMBOLS, MEASUREMENT_UNIT_LIMIT,
     MIN_AMOUNT, MIN_COOK_TIME, RECIPE_NAME_LIMIT, TAG_NAME_LIMIT,
-    TAG_SLUG_LIMIT, TEXT_LIMIT
-)
-
+    TAG_SLUG_LIMIT, TEXT_LIMIT)
 
 User = get_user_model()
 
@@ -84,7 +82,10 @@ class Ingredient(models.Model):
 
     def __str__(self):
         """Строковое представление ингредиента."""
-        return (f'{Truncator(self.name).words(LIMIT_OF_SYMBOLS)} ({self.measurement_unit})')
+        return (
+            f'{Truncator(self.name).words(LIMIT_OF_SYMBOLS)}'
+            f'({self.measurement_unit})'
+        )
 
 
 class Tag(models.Model):
@@ -111,7 +112,7 @@ class Tag(models.Model):
         ordering = ['name']
         verbose_name = 'Тэг'
         verbose_name_plural = 'Тэги'
-        
+
     def save(self, *args, **kwargs):
         """Автоматически генерирует slug из названия при сохранении."""
         if not self.slug:
@@ -133,7 +134,7 @@ class Recipe(models.Model):
     )
     name = models.CharField(
         max_length=RECIPE_NAME_LIMIT,
-        verbose_name='Название рецепта' 
+        verbose_name='Название рецепта'
     )
     image = models.ImageField(
         upload_to='media/recipes/',
@@ -173,6 +174,7 @@ class Recipe(models.Model):
 
 class RecipeIngredient(models.Model):
     """Связующая модель для ингредиентов в рецепте."""
+
     recipe = models.ForeignKey(
         Recipe,
         on_delete=models.CASCADE,
@@ -187,9 +189,9 @@ class RecipeIngredient(models.Model):
     )
     amount = models.PositiveSmallIntegerField(
         validators=[MinValueValidator(
-        MIN_AMOUNT,
-        message=f'Минимальное количество ингредиента - {MIN_AMOUNT}'
-    )],
+            MIN_AMOUNT,
+            message=f'Минимальное количество ингредиента - {MIN_AMOUNT}'
+        )],
         verbose_name='Количесво ингредиента',
     )
 
@@ -234,6 +236,7 @@ class RecipeTags(models.Model):
 
     class Meta:
         """Мета-класс для настроек связи рецепта и тэга."""
+
         verbose_name = 'Тэг рецепта'
         verbose_name_plural = 'Тэги рецепта'
         constraints = [
@@ -249,10 +252,11 @@ class RecipeTags(models.Model):
 class FavoriteShoppingCartBaseModel(models.Model):
     """
     Базовая модель для избранного и корзины покупок.
-    
-    Предоставляет общую структуру для хранения отношений между пользователями и рецептами
-    с гарантией уникальности каждой пары (пользователь, рецепт). Предназначена для наследования
-    конкретными моделями (Favorite и ShoppingCart).
+
+    Предоставляет общую структуру для хранения отношений между пользователями
+    и рецептами с гарантией уникальности каждой пары (пользователь, рецепт).
+    Предназначена для наследования конкретными моделями
+    (Favorite и ShoppingCart).
     """
 
     user = models.ForeignKey(
