@@ -12,7 +12,6 @@ User = get_user_model()
 class UserAdmin(BaseUserAdmin):
     """Административная панель для управления пользователями системы."""
 
-    model = User
     list_display = (
         'username', 'avatar_preview', 'first_name',
         'last_name', 'email'

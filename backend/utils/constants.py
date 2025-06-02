@@ -1,15 +1,41 @@
 EMAIL_LIMIT = 254
+"""Ограничение по длине для поля Email модели User."""
+
 FIRST_NAME_LIMIT = 150
+"""Ограничение по длине для поля first_name модели User."""
+
 INGREDIENT_NAME_LIMIT = 128
+"""Ограничение по длине для поля name модели Ingredient."""
+
 LAST_NAME_LIMIT = 150
+"""Ограничение по длине для поля last_name модели User."""
+
 LIMIT_OF_SYMBOLS = 20
+"""Ограничение по длине для поля Email модели User."""
+
 MEASUREMENT_UNIT_LIMIT = 64
+"""Ограничение по длине для поля measurement_unit модели Ingredient."""
+
 MIN_AMOUNT = 1
+"""Ограничение на минимальное значение поля amount модели Ingredient."""
+
 MIN_COOK_TIME = 1
+"""Ограничение на минимальное значение поля cooking_time модели Recipe."""
+
 PAGE_SIZE = 6
+"""Количество объектов, отображаемых на странице."""
+
 RECIPE_NAME_LIMIT = 256
+"""Ограничение по длине для поля name модели Recipe."""
+
 TAG_NAME_LIMIT = 32
+"""Ограничение по длине для поля name модели Tag."""
+
 TAG_SLUG_LIMIT = 32
+"""Ограничение по длине для поля slug модели Recipe."""
+
 TEXT_LIMIT = 512
-UNIT_LIMIT = 64
+"""Ограничение по длине для поля text модели Recipe."""
+
 USERNAME_LIMIT = 150
+"""Ограничение по длине для поля username модели User."""
