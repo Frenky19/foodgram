@@ -11,7 +11,7 @@ LAST_NAME_LIMIT = 150
 """Ограничение по длине для поля last_name модели User."""
 
 LIMIT_OF_SYMBOLS = 20
-"""Ограничение по длине для поля Email модели User."""
+"""Ограничение по длине для строкового представления моделей."""
 
 MEASUREMENT_UNIT_LIMIT = 64
 """Ограничение по длине для поля measurement_unit модели Ingredient."""
@@ -19,8 +19,17 @@ MEASUREMENT_UNIT_LIMIT = 64
 MIN_AMOUNT = 1
 """Ограничение на минимальное значение поля amount модели Ingredient."""
 
+MAX_AMOUNT = 9999
+"""Ограничение на максимальное значение поля amount модели Ingredient."""
+
 MIN_COOK_TIME = 1
 """Ограничение на минимальное значение поля cooking_time модели Recipe."""
+
+MAX_COOK_TIME = 1440
+"""Ограничение на максимальное значение поля cooking_time модели Recipe.
+
+1440 - один день
+"""
 
 PAGE_SIZE = 6
 """Количество объектов, отображаемых на странице."""
