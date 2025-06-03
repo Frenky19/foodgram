@@ -1,14 +1,13 @@
 from django.contrib.auth.models import AbstractUser
 from django.db import models
-from django.utils.text import Truncator
 
 from utils.constants import (EMAIL_LIMIT, FIRST_NAME_LIMIT, LAST_NAME_LIMIT,
-                             LIMIT_OF_SYMBOLS, USERNAME_LIMIT)
+                             USERNAME_LIMIT)
 
 
 # надо добавить валидацию логина
 class User(AbstractUser):
-    """Модель пользователя системы с расширенной функциональностью.
+    """Пользователь системы с расширенной функциональностью.
 
     Наследует все поля стандартной модели пользователя Django и добавляет:
     - Поле для загрузки аватара профиля
@@ -36,7 +35,6 @@ class User(AbstractUser):
     avatar = models.ImageField(
         upload_to='media/avatars/',
         blank=True,
-        null=True,
         verbose_name='Фото профиля'
     )
     USERNAME_FIELD = 'email'
@@ -47,19 +45,15 @@ class User(AbstractUser):
     )
 
     class Meta:
-        """Мета-класс для настройки модели пользователя."""
+        """Настройки отображения и сортировки пользователей."""
 
         ordering = ('username',)
         verbose_name = 'Пользователь'
         verbose_name_plural = 'Пользователи'
 
     def __str__(self):
-        """Строковое представление пользователя.
-
-        Возвращает:
-            str: Усеченное имя пользователя до LIMIT_OF_SYMBOLS символов
-        """
-        return Truncator(self.username).words(LIMIT_OF_SYMBOLS)
+        """Строковое представление логина пользователя."""
+        return self.username
 
 
 class Subscription(models.Model):
@@ -100,12 +94,9 @@ class Subscription(models.Model):
 
         Возвращает:
             str: Форматированная строка вида
-            "Пользователь ___ подписан на Пользователь ___"
-            с обрезанными именами до LIMIT_OF_SYMBOLS
+            "Пользователь ___ подписан на Пользователя ___"
         """
         return (
-            'Пользователь '
-            f'{Truncator(self.user.username).words(LIMIT_OF_SYMBOLS)}'
-            'подписан на пользователя '
-            f'{Truncator(self.author.username).words(LIMIT_OF_SYMBOLS)}'
+            f'Пользователь {self.user.username} подписан на Пользователя '
+            f'{self.author.username}'
         )
