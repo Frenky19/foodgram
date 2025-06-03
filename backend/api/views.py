@@ -27,7 +27,7 @@ User = get_user_model()
 
 
 class UserViewSet(viewsets.ModelViewSet):
-    """ViewSet для операций с пользователями."""
+    """Управление аккаунтами пользователей."""
 
     queryset = User.objects.all()
     serializer_class = UserSerializer
@@ -35,7 +35,7 @@ class UserViewSet(viewsets.ModelViewSet):
     permission_classes = [AllowAny]
 
     def get_serializer_class(self):
-        """Возвращает сериализатор в зависимости от действия."""
+        """Выбор сериализатора в зависимости от выполняемого действия."""
         if self.action == 'create':
             return UserCreateSerializer
         return super().get_serializer_class()
@@ -143,7 +143,7 @@ class UserViewSet(viewsets.ModelViewSet):
 
 
 class TagViewSet(viewsets.ReadOnlyModelViewSet):
-    """ViewSet для операций с тегами (только чтение)."""
+    """Просмотр доступных тегов для категорий рецептов."""
 
     queryset = Tag.objects.all()
     serializer_class = TagSerializer
@@ -152,7 +152,7 @@ class TagViewSet(viewsets.ReadOnlyModelViewSet):
 
 
 class IngredientViewSet(viewsets.ReadOnlyModelViewSet):
-    """ViewSet для операций с ингредиентами (только чтение)."""
+    """Поиск и просмотр ингредиентов для рецептов."""
 
     queryset = Ingredient.objects.all()
     serializer_class = IngredientSerializer
@@ -169,7 +169,7 @@ class IngredientViewSet(viewsets.ReadOnlyModelViewSet):
 
 
 class RecipeFilter(DjangoFilterBackend):
-    """Кастомный фильтр для рецептов."""
+    """Фильтрация рецептов по автору, тегам и пользовательским спискам."""
 
     def filter_queryset(self, request, queryset, view):
         """Фильтрация рецептов по параметрам запроса."""
@@ -191,7 +191,7 @@ class RecipeFilter(DjangoFilterBackend):
 
 
 class RecipeViewSet(viewsets.ModelViewSet):
-    """ViewSet для операций с рецептами."""
+    """Управление рецептами: создание, просмотр, обновление, удаление."""
 
     queryset = Recipe.objects.all()
     permission_classes = [IsAuthenticatedOrReadOnly]
@@ -199,7 +199,7 @@ class RecipeViewSet(viewsets.ModelViewSet):
     filter_backends = [RecipeFilter]
 
     def get_serializer_class(self):
-        """Возвращает сериализатор в зависимости от действия."""
+        """Выбор сериализатора в зависимости от действия."""
         if self.action in ['create', 'update', 'partial_update']:
             return RecipeCreateUpdateSerializer
         return RecipeSerializer
@@ -223,7 +223,7 @@ class RecipeViewSet(viewsets.ModelViewSet):
         )
 
     def _handle_relation_action(self, request, pk, model, relation_name):
-        """Обработчик для действий с отношениями (избранное/корзина).
+        """Обработка операций с пользовательскими списками (избранное/корзина).
 
         Args:
             request: Объект запроса
@@ -298,13 +298,13 @@ class RecipeViewSet(viewsets.ModelViewSet):
 
 
 class TokenCreateViewSet(mixins.CreateModelMixin, viewsets.GenericViewSet):
-    """ViewSet для создания JWT токена."""
+    """Аутентификация пользователей и получение токена доступа."""
 
     serializer_class = TokenCreateSerializer
     permission_classes = [AllowAny]
 
     def create(self, request, *args, **kwargs):
-        """Создает JWT токен для аутентификации."""
+        """Создание токена для авторизованного доступа."""
         serializer = self.get_serializer(data=request.data)
         serializer.is_valid(raise_exception=True)
         return Response(
@@ -314,10 +314,10 @@ class TokenCreateViewSet(mixins.CreateModelMixin, viewsets.GenericViewSet):
 
 
 class TokenDestroyViewSet(mixins.DestroyModelMixin, viewsets.GenericViewSet):
-    """ViewSet для удаления JWT токена (выход из системы)."""
+    """Завершение сессии пользователя."""
 
     permission_classes = [IsAuthenticated]
 
     def destroy(self, request, *args, **kwargs):
-        """Удаляет JWT токен текущего пользователя."""
+        """Аннулирование текущего токена доступа."""
         return Response(status=status.HTTP_204_NO_CONTENT)

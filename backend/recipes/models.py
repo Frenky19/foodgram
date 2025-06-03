@@ -13,7 +13,7 @@ User = get_user_model()
 
 # Надо доработать валидацию разрешенных символов для всех моделей
 class Ingredient(models.Model):
-    """Модель ингредиента с возможностью выбора единиц измерения."""
+    """Ингредиент с указанием единицы измерения."""
 
     name = models.CharField(
         max_length=INGREDIENT_NAME_LIMIT,
@@ -26,7 +26,7 @@ class Ingredient(models.Model):
     )
 
     class Meta:
-        """Мета-класс для настроек модели ингредиента."""
+        """Порядок отображения и названия ингредиентов."""
 
         ordering = ['name']
         verbose_name = 'Ингридиент'
@@ -39,12 +39,12 @@ class Ingredient(models.Model):
         )
 
     def __str__(self):
-        """Строковое представление ингредиента."""
+        """Название ингредиента с единицей измерения."""
         return f'{self.name} {self.measurement_unit}'
 
 
 class Tag(models.Model):
-    """Модель тега для категоризации рецептов."""
+    """Категория для группировки рецептов."""
 
     name = models.CharField(
         max_length=TAG_NAME_LIMIT,
@@ -62,25 +62,25 @@ class Tag(models.Model):
     )
 
     class Meta:
-        """Мета-класс для настроек модели тега."""
+        """Порядок отображения и названия тегов."""
 
         ordering = ['name']
         verbose_name = 'Тэг'
         verbose_name_plural = 'Тэги'
 
     def __str__(self):
-        """Строковое представление тега."""
+        """Название тега."""
         return self.name
 
     def save(self, *args, **kwargs):
-        """Автоматически генерирует slug из названия при сохранении."""
+        """Автоматическая генерация слага из названия."""
         if not self.slug:
             self.slug = slugify(self.name)
         super().save(*args, **kwargs)
 
 
 class Recipe(models.Model):
-    """Модель рецепта с привязкой к автору и тегам."""
+    """Кулинарный рецепт с авторством и тегами."""
 
     author = models.ForeignKey(
         User,
@@ -117,7 +117,7 @@ class Recipe(models.Model):
     )
 
     class Meta:
-        """Мета-класс для настроек модели рецепта."""
+        """Порядок отображения и названия рецептов."""
 
         ordering = ['-id']
         verbose_name = 'Рецепт'
@@ -131,12 +131,12 @@ class Recipe(models.Model):
         ]
 
     def __str__(self):
-        """Строковое представление рецепта."""
+        """Название рецепта."""
         return self.name
 
 
 class RecipeIngredient(models.Model):
-    """Связующая модель для ингредиентов в рецепте."""
+    """Связь рецепта с ингредиентами и их количеством."""
 
     recipe = models.ForeignKey(
         Recipe,
@@ -163,7 +163,7 @@ class RecipeIngredient(models.Model):
     )
 
     class Meta:
-        """Мета-класс для настроек связи рецепта и ингредиента."""
+        """Названия для связи рецептов и ингредиентов."""
 
         verbose_name = 'Ингредиент для рецепта'
         verbose_name_plural = 'Ингредиенты для рецепта'
@@ -175,7 +175,7 @@ class RecipeIngredient(models.Model):
         )
 
     def __str__(self):
-        """Строковое представление ингредиента с кол-вом и ед. измерения."""
+        """Ингредиент с количеством и единицей измерения."""
         return (
             f'{self.ingredient} - '
             f'{self.amount} '
@@ -184,7 +184,7 @@ class RecipeIngredient(models.Model):
 
 
 class FavoriteShoppingCartBaseModel(models.Model):
-    """Базовая модель для избранного и корзины покупок.
+    """Базовая структура для избранного и корзины покупок.
 
     Предоставляет общую структуру для хранения отношений между пользователями
     и рецептами с гарантией уникальности каждой пары (пользователь, рецепт).
@@ -204,7 +204,7 @@ class FavoriteShoppingCartBaseModel(models.Model):
     )
 
     class Meta:
-        """Мета-класс для настройки базовой модели."""
+        """Абстрактная модель с ограничением уникальности."""
 
         abstract = True
         constraints = [
@@ -216,15 +216,15 @@ class FavoriteShoppingCartBaseModel(models.Model):
         ]
 
     def __str__(self):
-        """Строковое представление связи в формате: Рецепт (Пользователь)."""
+        """Рецепт {название} Пользователя {логин}."""
         return f'Рецепт {self.recipe.name} Пользователя {self.user.username})'
 
 
 class Favorite(FavoriteShoppingCartBaseModel):
-    """Модель для хранения избранных рецептов пользователей."""
+    """Избранные рецепты пользователя."""
 
     class Meta(FavoriteShoppingCartBaseModel.Meta):
-        """Мета-класс для настроек модели избранного."""
+        """Названия для избранных рецептов."""
 
         verbose_name = 'Избранный'
         verbose_name_plural = 'Избранное'
@@ -232,10 +232,10 @@ class Favorite(FavoriteShoppingCartBaseModel):
 
 
 class ShoppingCart(FavoriteShoppingCartBaseModel):
-    """Модель корзины покупок с рецептами пользователя."""
+    """Корзина покупок с рецептами пользователя."""
 
     class Meta(FavoriteShoppingCartBaseModel.Meta):
-        """Мета-класс для настроек корзины покупок."""
+        """Названия для корзин покупок."""
 
         verbose_name = 'Корзина покупок'
         verbose_name_plural = 'Корзины покупок'

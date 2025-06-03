@@ -14,7 +14,7 @@ User = get_user_model()
 
 
 class Base64ImageField(serializers.ImageField):
-    """Кастомное поле для обработки изображений в base64."""
+    """Декодирование изображений в формате base64."""
 
     def to_internal_value(self, data):
         """Преобразует строку base64 в объект изображения.
@@ -36,12 +36,14 @@ class Base64ImageField(serializers.ImageField):
 
 
 class UserSerializer(serializers.ModelSerializer):
-    """Сериализатор для отображения информации о пользователе."""
+    """Представление данных пользователя с подпиской и аватаром."""
 
     is_subscribed = serializers.SerializerMethodField()
     avatar = serializers.SerializerMethodField()
 
     class Meta:
+        """Поля и модель для сериализации пользователя."""
+
         model = User
         fields = (
             'email', 'id', 'username',
@@ -50,7 +52,7 @@ class UserSerializer(serializers.ModelSerializer):
         )
 
     def get_is_subscribed(self, obj):
-        """Проверяет, подписан ли текущий пользователь на данного автора.
+        """Проверка подписки текущего пользователя на данного автора.
 
         Args:
             obj: Объект пользователя для проверки
@@ -67,7 +69,7 @@ class UserSerializer(serializers.ModelSerializer):
         return False
 
     def get_avatar(self, obj):
-        """Возвращает абсолютный URL аватара пользователя.
+        """Получение абсолютного URL аватара пользователя.
 
         Args:
             obj: Объект пользователя
@@ -81,9 +83,11 @@ class UserSerializer(serializers.ModelSerializer):
 
 
 class UserCreateSerializer(serializers.ModelSerializer):
-    """Сериализатор для регистрации новых пользователей."""
+    """Регистрация новых пользователей в системе."""
 
     class Meta:
+        """Поля и модель для создания пользователя."""
+
         model = User
         fields = (
             'email', 'id', 'username',
@@ -92,7 +96,7 @@ class UserCreateSerializer(serializers.ModelSerializer):
         extra_kwargs = {'password': {'write_only': True}}
 
     def create(self, validated_data):
-        """Создает нового пользователя с валидированными данными.
+        """Создание нового пользователя с валидированными данными.
 
         Args:
             validated_data: Проверенные данные пользователя
@@ -105,40 +109,46 @@ class UserCreateSerializer(serializers.ModelSerializer):
 
 
 class SetPasswordSerializer(serializers.Serializer):
-    """Сериализатор для изменения пароля пользователя."""
+    """Обновление пароля текущего пользователя."""
 
     new_password = serializers.CharField(required=True)
     current_password = serializers.CharField(required=True)
 
 
 class SetAvatarSerializer(serializers.ModelSerializer):
-    """Сериализатор для обновления аватара пользователя."""
+    """Обновление аватара профиля пользователя."""
 
     avatar = Base64ImageField()
 
     class Meta:
+        """Поля и модель для обновления аватара."""
+
         model = User
         fields = ('avatar',)
 
 
 class IngredientSerializer(serializers.ModelSerializer):
-    """Сериализатор для отображения информации об ингредиентах."""
+    """Представление данных об ингредиентах."""
 
     class Meta:
+        """Поля и модель для сериализации ингредиентов."""
+
         model = Ingredient
         fields = ('id', 'name', 'measurement_unit')
 
 
 class TagSerializer(serializers.ModelSerializer):
-    """Сериализатор для отображения информации о тегах."""
+    """Представление данных о тегах."""
 
     class Meta:
+        """Поля и модель для сериализации тегов."""
+
         model = Tag
         fields = ('id', 'name', 'slug')
 
 
 class RecipeIngredientSerializer(serializers.ModelSerializer):
-    """Сериализатор для отображения ингредиентов в рецепте."""
+    """Ингредиенты в составе рецепта с количеством."""
 
     id = serializers.ReadOnlyField(source='ingredient.id')
     name = serializers.ReadOnlyField(source='ingredient.name')
@@ -147,21 +157,25 @@ class RecipeIngredientSerializer(serializers.ModelSerializer):
     )
 
     class Meta:
+        """Поля и модель для связи рецепта с ингредиентами."""
+
         model = RecipeIngredient
         fields = ('id', 'name', 'measurement_unit', 'amount')
 
 
 class RecipeMinifiedSerializer(serializers.ModelSerializer):
-    """Упрощенный сериализатор для рецептов (корзина/избранное)."""
+    """Краткое представление рецепта для списков."""
 
     image = serializers.SerializerMethodField()
 
     class Meta:
+        """Поля и модель для сокращённого представления рецептов."""
+
         model = Recipe
         fields = ('id', 'name', 'image', 'cooking_time')
 
     def get_image(self, obj):
-        """Возвращает абсолютный URL изображения рецепта.
+        """Получение абсолютного URL изображения рецепта.
 
         Args:
             obj: Объект рецепта
@@ -175,7 +189,7 @@ class RecipeMinifiedSerializer(serializers.ModelSerializer):
 
 
 class RecipeSerializer(serializers.ModelSerializer):
-    """Основной сериализатор для детального отображения рецептов."""
+    """Детальное представление рецепта с дополнительной информацией."""
 
     tags = TagSerializer(many=True, read_only=True)
     author = UserSerializer(read_only=True)
@@ -189,6 +203,8 @@ class RecipeSerializer(serializers.ModelSerializer):
     image = serializers.SerializerMethodField()
 
     class Meta:
+        """Поля и модель для полного представления рецептов."""
+
         model = Recipe
         fields = (
             'id', 'tags', 'author', 'ingredients',
@@ -197,7 +213,7 @@ class RecipeSerializer(serializers.ModelSerializer):
         )
 
     def get_image(self, obj):
-        """Возвращает абсолютный URL изображения рецепта.
+        """Получение абсолютного URL изображения рецепта.
 
         Args:
             obj: Объект рецепта
@@ -245,7 +261,7 @@ class RecipeSerializer(serializers.ModelSerializer):
 
 
 class RecipeCreateUpdateSerializer(serializers.ModelSerializer):
-    """Сериализатор для создания и обновления рецептов."""
+    """Создание и обновление рецептов с валидацией данных."""
 
     ingredients = serializers.ListField(
         child=serializers.DictField(),
@@ -259,6 +275,8 @@ class RecipeCreateUpdateSerializer(serializers.ModelSerializer):
     image = Base64ImageField()
 
     class Meta:
+        """Поля и модель для создания/обновления рецептов."""
+
         model = Recipe
         fields = (
             'ingredients', 'tags', 'image',
@@ -271,7 +289,7 @@ class RecipeCreateUpdateSerializer(serializers.ModelSerializer):
         }
 
     def validate_ingredients(self, value):
-        """Проверяет валидность списка ингредиентов.
+        """Проверка корректности списка ингредиентов.
 
         Args:
             value: Список ингредиентов для валидации
@@ -318,7 +336,7 @@ class RecipeCreateUpdateSerializer(serializers.ModelSerializer):
         return validated_ingredients
 
     def validate_tags(self, value):
-        """Проверяет валидность списка тегов.
+        """Проверка корректности списка тегов.
 
         Args:
             value: Список тегов для валидации
@@ -337,7 +355,7 @@ class RecipeCreateUpdateSerializer(serializers.ModelSerializer):
         return value
 
     def create_ingredients(self, recipe, ingredients):
-        """Создает связи между рецептом и ингредиентами.
+        """Создание связей между рецептом и ингредиентами.
 
         Args:
             recipe: Объект рецепта
@@ -352,7 +370,7 @@ class RecipeCreateUpdateSerializer(serializers.ModelSerializer):
         ])
 
     def create(self, validated_data):
-        """Создает новый рецепт со связанными ингредиентами и тегами.
+        """Создание нового рецепта со связанными данными.
 
         Args:
             validated_data: Проверенные данные рецепта
@@ -372,7 +390,7 @@ class RecipeCreateUpdateSerializer(serializers.ModelSerializer):
         return recipe
 
     def update(self, instance, validated_data):
-        """Обновляет существующий рецепт и его связи.
+        """Обновление существующего рецепта и его связей.
 
         Args:
             instance: Существующий объект рецепта
@@ -395,7 +413,7 @@ class RecipeCreateUpdateSerializer(serializers.ModelSerializer):
         return instance
 
     def to_representation(self, instance):
-        """Преобразует экземпляр рецепта в сериализованное представление.
+        """Преобразование объекта рецепта в сериализованный формат.
 
         Args:
             instance: Объект рецепта
@@ -410,18 +428,20 @@ class RecipeCreateUpdateSerializer(serializers.ModelSerializer):
 
 
 class UserWithRecipesSerializer(UserSerializer):
-    """Сериализатор для пользователя с рецептами (подписки)."""
+    """Представление пользователя с его рецептами."""
 
     recipes = serializers.SerializerMethodField()
     recipes_count = serializers.SerializerMethodField()
 
     class Meta(UserSerializer.Meta):
+        """Поля и модель для пользователя с рецептами."""
+
         fields = UserSerializer.Meta.fields + (
             'recipes', 'recipes_count'
         )
 
     def get_recipes(self, obj):
-        """Возвращает список рецептов пользователя с ограничением по кол-ву.
+        """Получение рецептов пользователя с ограничением количества.
 
         Args:
             obj: Объект пользователя
@@ -444,7 +464,7 @@ class UserWithRecipesSerializer(UserSerializer):
         ).data
 
     def get_recipes_count(self, obj):
-        """Возвращает общее количество рецептов пользователя.
+        """Получение общего количества рецептов пользователя.
 
         Args:
             obj: Объект пользователя
@@ -456,14 +476,16 @@ class UserWithRecipesSerializer(UserSerializer):
 
 
 class SubscriptionSerializer(serializers.ModelSerializer):
-    """Сериализатор для создания подписок на пользователей."""
+    """Создание подписок на других пользователей."""
 
     class Meta:
+        """Поля и модель для подписок."""
+
         model = Subscription
         fields = ('user', 'author')
 
     def validate(self, data):
-        """Проверяет валидность данных подписки.
+        """Проверка валидности данных для подписки.
 
         Args:
             data: Данные для создания подписки
@@ -489,13 +511,13 @@ class SubscriptionSerializer(serializers.ModelSerializer):
 
 
 class TokenCreateSerializer(serializers.Serializer):
-    """Сериализатор для получения токена."""
+    """Аутентификация пользователя по email и паролю."""
 
     email = serializers.EmailField(required=True)
     password = serializers.CharField(required=True)
 
 
 class RecipeGetShortLinkSerializer(serializers.Serializer):
-    """Сериализатор для короткой ссылки на рецепт."""
+    """Сокращённая ссылка для доступа к рецепту."""
 
     short_link = serializers.URLField()

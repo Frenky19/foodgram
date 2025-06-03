@@ -2,7 +2,7 @@ from rest_framework.permissions import SAFE_METHODS, BasePermission
 
 
 class IsAdminAuthorOrReadOnly(BasePermission):
-    """Кастомный класс разрешений, который позволяет.
+    """Предоставление ограниченного доступа.
 
     - Чтение (безопасные методы) для всех пользователей (включая анонимных)
     - Запись (изменение данных) только:

@@ -25,7 +25,7 @@ class TagAdmin(admin.ModelAdmin):
 
 
 class RecipeIngredientInline(admin.TabularInline):
-    """Инлайн для редактирования ингредиентов в рецепте."""
+    """Редактирования ингредиентов в рецепте."""
 
     model = RecipeIngredient
     extra = 1
@@ -54,7 +54,7 @@ class RecipeAdmin(admin.ModelAdmin):
     readonly_fields = ('favorite_count', 'recipe_image_preview')
 
     def get_queryset(self, request):
-        """Оптимизированный QuerySet для админки рецептов.
+        """Оптимизирует админку рецептов.
 
         Выполняет:
         - Аннотацию количества добавлений в избранное
@@ -73,7 +73,7 @@ class RecipeAdmin(admin.ModelAdmin):
     favorite_count.short_description = 'В избранном'
 
     def recipe_image_preview(self, obj):
-        """Отображает изображения блюда в админке.
+        """Отображание изображения блюда в админке.
 
         Возвращает:
             HTML-тег изображения, если файл существует, или текст-заглушку.

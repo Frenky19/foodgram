@@ -10,7 +10,7 @@ User = get_user_model()
 
 @admin.register(User)
 class UserAdmin(BaseUserAdmin):
-    """Административная панель для управления пользователями системы."""
+    """Управление пользователями системы в административном интерфейсе."""
 
     list_display = (
         'username', 'avatar_preview', 'first_name',
@@ -38,7 +38,7 @@ class UserAdmin(BaseUserAdmin):
 
 @admin.register(Subscription)
 class SubscriptionAdmin(admin.ModelAdmin):
-    """Административная панель для управления подписками пользователей."""
+    """Управление подписками пользователей в административном интерфейсе."""
 
     list_display = ('user', 'author')
     list_filter = ('user', 'author')
@@ -55,10 +55,5 @@ class SubscriptionAdmin(admin.ModelAdmin):
     autocomplete_fields = ('user', 'author')
 
     def get_queryset(self, request):
-        """Оптимизирует запросы к базе данных с использованием select_related.
-
-        Возвращает:
-            QuerySet: Оптимизированный набор данных с предварительной загрузкой
-            связанных объектов пользователя и автора.
-        """
+        """Оптимизированные запросы с предзагрузкой связанных объектов."""
         return super().get_queryset(request).select_related('user', 'author')
