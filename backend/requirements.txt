@@ -1,6 +1,10 @@
 flake8==6.0.0
 flake8-docstrings==1.7.0
 flake8-isort==6.0.0
+flake8-quotes==3.3.2
+flake8-rst-docstrings==0.3.0
+flake8-requirements==1.7.1
+flake8-django==1.1.1
 gunicorn==20.1.0
 iniconfig==2.0.0
 isort==5.0.0
