@@ -16,14 +16,12 @@ class UserAdmin(BaseUserAdmin):
         'username', 'avatar_preview', 'first_name',
         'last_name', 'email'
     )
-    list_filter = ('date_joined', 'last_login',
-                   'is_staff', 'is_superuser', 'is_active')
+    list_filter = ('is_staff', 'is_superuser', 'is_active')
     readonly_fields = ('avatar_preview', 'date_joined', 'last_login')
     search_fields = ('username', 'email', 'first_name', 'last_name')
 
     def avatar_preview(self, obj):
-        """
-        Отображает изображения профиля пользователя в админке.
+        """Отображает изображения профиля пользователя в админке.
 
         Возвращает:
             HTML-тег изображения, если файл существует, или текст-заглушку.
@@ -34,7 +32,7 @@ class UserAdmin(BaseUserAdmin):
                  '100px; max-width: 100px;" />'),
                 obj.avatar.url
             )
-        return "Нет изображения"
+        return 'Нет изображения'
     avatar_preview.short_description = 'Фото профиля'
 
 
@@ -57,8 +55,7 @@ class SubscriptionAdmin(admin.ModelAdmin):
     autocomplete_fields = ('user', 'author')
 
     def get_queryset(self, request):
-        """
-        Оптимизирует запросы к базе данных с использованием select_related.
+        """Оптимизирует запросы к базе данных с использованием select_related.
 
         Возвращает:
             QuerySet: Оптимизированный набор данных с предварительной загрузкой
