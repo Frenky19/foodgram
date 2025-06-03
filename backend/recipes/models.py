@@ -1,10 +1,10 @@
 from django.contrib.auth import get_user_model
-from django.core.validators import MinValueValidator
+from django.core.validators import MaxValueValidator, MinValueValidator
 from django.db import models
-from django.utils.text import Truncator, slugify
+from django.utils.text import slugify
 
 from utils.constants import (
-    INGREDIENT_NAME_LIMIT, LIMIT_OF_SYMBOLS, MEASUREMENT_UNIT_LIMIT,
+    INGREDIENT_NAME_LIMIT, MEASUREMENT_UNIT_LIMIT, MAX_AMOUNT, MAX_COOK_TIME,
     MIN_AMOUNT, MIN_COOK_TIME, RECIPE_NAME_LIMIT, TAG_NAME_LIMIT,
     TAG_SLUG_LIMIT, TEXT_LIMIT)
 
@@ -14,26 +14,6 @@ User = get_user_model()
 # Надо доработать валидацию разрешенных символов для всех моделей
 class Ingredient(models.Model):
     """Модель ингредиента с возможностью выбора единиц измерения."""
-
-    UNITS = [
-        ('Гр', 'Граммы'),
-        ('Кг', 'Килограммы'),
-        ('Мл', 'Миллилитры'),
-        ('Л', 'Литры'),
-        ('Шт', 'Штуки'),
-        ('СЛ', 'Столовые ложки'),
-        ('ЧЛ', 'Чайные ложки'),
-    ]
-
-    UNIT_FORMS = {
-        'Гр': ['грамм', 'грамма', 'граммов'],
-        'Кг': ['килограмм', 'килограмма', 'килограммов'],
-        'Мл': ['миллилитр', 'миллилитра', 'миллилитров'],
-        'Л': ['литр', 'литра', 'литров'],
-        'Шт': ['штука', 'штуки', 'штук'],
-        'СТ': ['столовая ложка', 'столовые ложки', 'столовых ложек'],
-        'ЧЛ': ['чайная ложка', 'чайные ложки', 'чайных ложек'],
-    }
 
     name = models.CharField(
         max_length=INGREDIENT_NAME_LIMIT,
@@ -58,34 +38,9 @@ class Ingredient(models.Model):
             ),
         )
 
-    def get_unit_with_amount_display(self, amount):
-        """
-        Возвращает правильную грамматическую форму единицы измерения.
-
-        Args:
-            amount (float): Количество ингредиента
-
-        Returns:
-            str: Склоненная форма единицы измерения
-        """
-        unit_forms = self.UNIT_FORMS.get(self.measurement_unit, ['', '', ''])
-        n = abs(amount) % 100
-        n1 = n % 10
-        if 10 < n < 20:
-            return unit_forms[2]
-        elif 1 < n1 < 5:
-            return unit_forms[1]
-        elif n1 == 1:
-            return unit_forms[0]
-        else:
-            return unit_forms[2]
-
     def __str__(self):
         """Строковое представление ингредиента."""
-        return (
-            f'{Truncator(self.name).words(LIMIT_OF_SYMBOLS)}'
-            f'({self.measurement_unit})'
-        )
+        return f'{self.name} {self.measurement_unit}'
 
 
 class Tag(models.Model):
@@ -113,15 +68,15 @@ class Tag(models.Model):
         verbose_name = 'Тэг'
         verbose_name_plural = 'Тэги'
 
+    def __str__(self):
+        """Строковое представление тега."""
+        return self.name
+
     def save(self, *args, **kwargs):
         """Автоматически генерирует slug из названия при сохранении."""
         if not self.slug:
             self.slug = slugify(self.name)
         super().save(*args, **kwargs)
-
-    def __str__(self):
-        """Строковое представление тега."""
-        return Truncator(self.name).words(LIMIT_OF_SYMBOLS)
 
 
 class Recipe(models.Model):
@@ -138,7 +93,6 @@ class Recipe(models.Model):
     )
     image = models.ImageField(
         upload_to='media/recipes/',
-        null=True,
         blank=True,
         verbose_name='Изображение блюда'
     )
@@ -148,14 +102,17 @@ class Recipe(models.Model):
     )
     tags = models.ManyToManyField(
         Tag,
-        through='RecipeTags',
         verbose_name='Тэг'
     )
     cooking_time = models.PositiveSmallIntegerField(
-        validators=[MinValueValidator(
-            MIN_COOK_TIME,
-            f'Время готовки не может быть менее {MIN_COOK_TIME} минут(ы)'
-        ), ],
+        validators=[
+            MinValueValidator(
+                MIN_COOK_TIME,
+                f'Время готовки не может быть менее {MIN_COOK_TIME} минут(ы)'),
+            MaxValueValidator(
+                MAX_COOK_TIME,
+                f'Время готовки не может превышать {MAX_COOK_TIME} минут(ы)'),
+        ],
         verbose_name='Время приготовления в минутах',
     )
 
@@ -166,10 +123,16 @@ class Recipe(models.Model):
         verbose_name = 'Рецепт'
         verbose_name_plural = 'Рецепты'
         default_related_name = 'recipes'
+        constraints = [
+            models.UniqueConstraint(
+                fields=('name', 'author'),
+                name='unique_recipe_author'
+            )
+        ]
 
     def __str__(self):
         """Строковое представление рецепта."""
-        return Truncator(self.name).words(LIMIT_OF_SYMBOLS)
+        return self.name
 
 
 class RecipeIngredient(models.Model):
@@ -188,11 +151,15 @@ class RecipeIngredient(models.Model):
         verbose_name='Ингредиент'
     )
     amount = models.PositiveSmallIntegerField(
-        validators=[MinValueValidator(
-            MIN_AMOUNT,
-            message=f'Минимальное количество ингредиента - {MIN_AMOUNT}'
-        )],
-        verbose_name='Количесво ингредиента',
+        validators=[
+            MinValueValidator(
+                MIN_AMOUNT,
+                message=f'Минимальное количество ингредиента - {MIN_AMOUNT}'),
+            MaxValueValidator(
+                MAX_AMOUNT,
+                message=f'Максимальное количество ингредиента - {MAX_AMOUNT}'),
+        ],
+        verbose_name='Количество ингредиента',
     )
 
     class Meta:
@@ -208,50 +175,16 @@ class RecipeIngredient(models.Model):
         )
 
     def __str__(self):
-        """Строковое представление с количеством и единицей измерения."""
-        unit_disp = self.ingredient.get_unit_with_amount_display(self.amount)
-        truncated_words = Truncator(unit_disp).words(LIMIT_OF_SYMBOLS)
+        """Строковое представление ингредиента с кол-вом и ед. измерения."""
         return (
-            f'{Truncator(self.ingredient).words(LIMIT_OF_SYMBOLS)} - '
-            f'{Truncator(self.amount).words(LIMIT_OF_SYMBOLS)} '
-            f'{truncated_words}'
+            f'{self.ingredient} - '
+            f'{self.amount} '
+            f'{self.ingredient.measurement_unit}'
         )
 
 
-class RecipeTags(models.Model):
-    """Связующая модель для тэгов в рецепте."""
-
-    recipe = models.ForeignKey(
-        Recipe,
-        on_delete=models.CASCADE,
-        related_name='tag_list',
-        verbose_name='Рецепт'
-    )
-    tag = models.ForeignKey(
-        Tag,
-        on_delete=models.CASCADE,
-        related_name='tag_recipe',
-        verbose_name='Тэг'
-    )
-
-    class Meta:
-        """Мета-класс для настроек связи рецепта и тэга."""
-
-        verbose_name = 'Тэг рецепта'
-        verbose_name_plural = 'Тэги рецепта'
-        constraints = [
-            models.UniqueConstraint(fields=('recipe', 'tag'),
-                                    name='unique_recipe_tag')
-        ]
-
-    def __str__(self):
-        """Строковое представление рецепта с тэгом."""
-        return f'Рецепт {self.recipe.name} (тэг {self.tag.name})'
-
-
 class FavoriteShoppingCartBaseModel(models.Model):
-    """
-    Базовая модель для избранного и корзины покупок.
+    """Базовая модель для избранного и корзины покупок.
 
     Предоставляет общую структуру для хранения отношений между пользователями
     и рецептами с гарантией уникальности каждой пары (пользователь, рецепт).
@@ -284,7 +217,7 @@ class FavoriteShoppingCartBaseModel(models.Model):
 
     def __str__(self):
         """Строковое представление связи в формате: Рецепт (Пользователь)."""
-        return f'{self.recipe.name} ({self.user.username})'
+        return f'Рецепт {self.recipe.name} Пользователя {self.user.username})'
 
 
 class Favorite(FavoriteShoppingCartBaseModel):
