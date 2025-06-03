@@ -223,8 +223,7 @@ class RecipeViewSet(viewsets.ModelViewSet):
         )
 
     def _handle_relation_action(self, request, pk, model, relation_name):
-        """
-        Обработчик для действий с отношениями (избранное/корзина).
+        """Обработчик для действий с отношениями (избранное/корзина).
 
         Args:
             request: Объект запроса
@@ -271,7 +270,7 @@ class RecipeViewSet(viewsets.ModelViewSet):
         ).annotate(
             total_amount=Sum('amount')
         ).order_by('ingredient__name')
-        content = "Список покупок:\n\n"
+        content = 'Список покупок:\n\n'
         for item in ingredients:
             content += (
                 f"{item['ingredient__name']} - "
@@ -290,7 +289,7 @@ class RecipeViewSet(viewsets.ModelViewSet):
         """Генерация короткой ссылки на конкретный рецепт."""
         recipe = get_object_or_404(Recipe, pk=pk)
         short_link = request.build_absolute_uri(
-            f"/api/recipes/{recipe.id}/"
+            f'/api/recipes/{recipe.id}/'
         )
         serializer = RecipeGetShortLinkSerializer({
             'short_link': short_link

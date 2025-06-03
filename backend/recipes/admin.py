@@ -73,8 +73,7 @@ class RecipeAdmin(admin.ModelAdmin):
     favorite_count.short_description = 'В избранном'
 
     def recipe_image_preview(self, obj):
-        """
-        Отображает изображения блюда в админке.
+        """Отображает изображения блюда в админке.
 
         Возвращает:
             HTML-тег изображения, если файл существует, или текст-заглушку.
@@ -85,7 +84,7 @@ class RecipeAdmin(admin.ModelAdmin):
                  '100px; max-width: 100px;" />'),
                 obj.image.url
             )
-        return "Нет изображения"
+        return 'Нет изображения'
     recipe_image_preview.short_description = 'Фото блюда'
 
 

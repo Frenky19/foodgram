@@ -2,8 +2,7 @@ from rest_framework.permissions import SAFE_METHODS, BasePermission
 
 
 class IsAdminAuthorOrReadOnly(BasePermission):
-    """
-    Кастомный класс разрешений, который позволяет.
+    """Кастомный класс разрешений, который позволяет.
 
     - Чтение (безопасные методы) для всех пользователей (включая анонимных)
     - Запись (изменение данных) только:
@@ -13,8 +12,7 @@ class IsAdminAuthorOrReadOnly(BasePermission):
     """
 
     def has_permission(self, request, view):
-        """
-        Проверяет разрешения на уровне запроса (до получения объекта).
+        """Проверяет разрешения на уровне запроса (до получения объекта).
 
         Args:
             request (HttpRequest): Объект запроса
@@ -29,8 +27,7 @@ class IsAdminAuthorOrReadOnly(BasePermission):
         )
 
     def has_object_permission(self, request, view, obj):
-        """
-        Проверяет разрешения на уровне конкретного объекта.
+        """Проверяет разрешения на уровне конкретного объекта.
 
         Args:
             request (HttpRequest): Объект запроса

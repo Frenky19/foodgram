@@ -61,7 +61,7 @@ TEMPLATES = [
     },
 ]
 
-WSGI_APPLICATION = "foodgram.wsgi.application"
+WSGI_APPLICATION = 'foodgram.wsgi.application'
 
 
 # Установите в файле .env переменную SQLITE=True, чтобы использовать бд Sqlite

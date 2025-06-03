@@ -18,16 +18,14 @@ User = get_user_model()
 
 
 class TestSettingsMixin:
-    """
-    Настройка тестового окружения.
+    """Настройка тестового окружения.
 
     - Переопределяет настройки пагинации REST Framework
     - Активирует новые настройки
     """
 
     def setUp(self):
-        """
-        Настройка тестового окружения.
+        """Настройка тестового окружения.
 
         - Переопределяет настройки пагинации REST Framework
         - Активирует новые настройки
@@ -48,8 +46,7 @@ class TestSettingsMixin:
 
 
 class UserAPITests(APITestCase, TestSettingsMixin):
-    """
-    Тесты API для работы с пользователями.
+    """Тесты API для работы с пользователями.
 
     - Регистрация пользователя
     - Получение профиля текущего пользователя
@@ -58,8 +55,7 @@ class UserAPITests(APITestCase, TestSettingsMixin):
     """
 
     def setUp(self):
-        """
-        Подготовка данных для тестов.
+        """Подготовка данных для тестов.
 
         - Создание тестовых пользователей
         - Инициализация API клиента
@@ -80,8 +76,7 @@ class UserAPITests(APITestCase, TestSettingsMixin):
         self.client = APIClient()
 
     def test_user_registration(self):
-        """
-        Тест регистрации нового пользователя.
+        """Тест регистрации нового пользователя.
 
         - Проверка успешного создания пользователя (201 Created)
         - Проверка увеличения счетчика пользователей
@@ -103,8 +98,7 @@ class UserAPITests(APITestCase, TestSettingsMixin):
         self.assertNotIn('password', response.data)
 
     def test_get_current_user(self):
-        """
-        Тест получения профиля текущего пользователя.
+        """Тест получения профиля текущего пользователя.
 
         - Проверка доступа аутентифицированного пользователя
         - Проверка корректности возвращаемых данных
@@ -116,8 +110,7 @@ class UserAPITests(APITestCase, TestSettingsMixin):
         self.assertEqual(response.data['email'], self.user.email)
 
     def test_set_password(self):
-        """
-        Тест смены пароля пользователя.
+        """Тест смены пароля пользователя.
 
         - Проверка успешной смены пароля (204 No Content)
         - Проверка действительности нового пароля
@@ -134,8 +127,7 @@ class UserAPITests(APITestCase, TestSettingsMixin):
         self.assertTrue(self.user.check_password('newtestpassword'))
 
     def test_subscribe(self):
-        """
-        Тест подписки и отписки от пользователя.
+        """Тест подписки и отписки от пользователя.
 
         - Проверка создания подписки (201 Created)
         - Проверка существования подписки в базе
@@ -155,16 +147,14 @@ class UserAPITests(APITestCase, TestSettingsMixin):
 
 
 class AuthAPITests(APITestCase, TestSettingsMixin):
-    """
-    Тесты API аутентификации.
+    """Тесты API аутентификации.
 
     - Получение токена авторизации
     - Выход из системы (удаление токена)
     """
 
     def setUp(self):
-        """
-        Подготовка данных для тестов.
+        """Подготовка данных для тестов.
 
         - Создание тестового пользователя
         - Инициализация API клиента
@@ -178,8 +168,7 @@ class AuthAPITests(APITestCase, TestSettingsMixin):
         self.client = APIClient()
 
     def test_token_obtain(self):
-        """
-        Тест получения токена авторизации.
+        """Тест получения токена авторизации.
 
         - Проверка успешной аутентификации (200 OK)
         - Проверка наличия токена в ответе
@@ -194,8 +183,7 @@ class AuthAPITests(APITestCase, TestSettingsMixin):
         self.assertIn('auth_token', response.data)
 
     def test_token_logout(self):
-        """
-        Тест выхода из системы.
+        """Тест выхода из системы.
 
         - Проверка успешного удаления токена (204 No Content)
         - Проверка отсутствия токена в базе после выхода
@@ -209,8 +197,7 @@ class AuthAPITests(APITestCase, TestSettingsMixin):
 
 
 class RecipeAPITests(APITestCase, TestSettingsMixin):
-    """
-    Тесты API для работы с рецептами.
+    """Тесты API для работы с рецептами.
 
     - Создание, обновление и удаление рецептов
     - Работа с избранным и списком покупок
@@ -219,8 +206,7 @@ class RecipeAPITests(APITestCase, TestSettingsMixin):
     """
 
     def setUp(self):
-        """
-        Подготовка данных для тестов.
+        """Подготовка данных для тестов.
 
         - Создание тестовых пользователей
         - Создание ингредиентов и тегов
@@ -269,13 +255,12 @@ class RecipeAPITests(APITestCase, TestSettingsMixin):
         Image.new('RGB', (100, 100)).save(image, 'JPEG')
         image.seek(0)
         return (
-            f"data:image/jpeg;base64,"
-            f"{base64.b64encode(image.getvalue()).decode('utf-8')}"
+            f'data:image/jpeg;base64,'
+            f'{base64.b64encode(image.getvalue()).decode("utf-8")}'
         )
 
     def test_create_recipe(self):
-        """
-        Тест создания нового рецепта.
+        """Тест создания нового рецепта.
 
         - Проверка успешного создания (201 Created)
         - Проверка увеличения счетчика рецептов
@@ -299,8 +284,7 @@ class RecipeAPITests(APITestCase, TestSettingsMixin):
         self.assertEqual(Recipe.objects.count(), 2)
 
     def test_update_recipe(self):
-        """
-        Тест обновления существующего рецепта.
+        """Тест обновления существующего рецепта.
 
         - Проверка успешного обновления (200 OK)
         - Проверка изменения названия
@@ -326,8 +310,7 @@ class RecipeAPITests(APITestCase, TestSettingsMixin):
         )
 
     def test_delete_recipe(self):
-        """
-        Тест удаления рецепта.
+        """Тест удаления рецепта.
 
         - Проверка успешного удаления (204 No Content)
         - Проверка уменьшения счетчика рецептов
@@ -338,8 +321,7 @@ class RecipeAPITests(APITestCase, TestSettingsMixin):
         self.assertEqual(Recipe.objects.count(), 0)
 
     def test_add_to_favorites(self):
-        """
-        Тест добавления и удаления рецепта из избранного.
+        """Тест добавления и удаления рецепта из избранного.
 
         - Проверка добавления в избранное (201 Created)
         - Проверка существования в избранном
@@ -357,8 +339,7 @@ class RecipeAPITests(APITestCase, TestSettingsMixin):
             user=self.user, recipe=self.recipe).exists())
 
     def test_add_to_shopping_cart(self):
-        """
-        Тест добавления и удаления рецепта из списка покупок.
+        """Тест добавления и удаления рецепта из списка покупок.
 
         - Проверка добавления в список покупок (201 Created)
         - Проверка существования в списке покупок
@@ -378,8 +359,7 @@ class RecipeAPITests(APITestCase, TestSettingsMixin):
             user=self.user, recipe=self.recipe).exists())
 
     def test_download_shopping_cart(self):
-        """
-        Тест скачивания списка покупок.
+        """Тест скачивания списка покупок.
 
         - Проверка успешного запроса (200 OK)
         - Проверка типа контента (text/plain)
@@ -396,8 +376,7 @@ class RecipeAPITests(APITestCase, TestSettingsMixin):
         self.assertIn('200', content)
 
     def test_get_recipe_short_link(self):
-        """
-        Тест получения короткой ссылки на рецепт.
+        """Тест получения короткой ссылки на рецепт.
 
         - Проверка успешного запроса (200 OK)
         - Проверка наличия поля 'short_link' в ответе
@@ -411,8 +390,7 @@ class RecipeAPITests(APITestCase, TestSettingsMixin):
 
 
 class IngredientTagAPITests(APITestCase, TestSettingsMixin):
-    """
-    Тесты API для работы с ингредиентами и тегами.
+    """Тесты API для работы с ингредиентами и тегами.
 
     - Получение списка ингредиентов
     - Фильтрация ингредиентов
@@ -421,8 +399,7 @@ class IngredientTagAPITests(APITestCase, TestSettingsMixin):
     """
 
     def setUp(self):
-        """
-        Подготовка данных для тестов.
+        """Подготовка данных для тестов.
 
         - Создание тестовых ингредиентов
         - Создание тегов
@@ -440,8 +417,7 @@ class IngredientTagAPITests(APITestCase, TestSettingsMixin):
         self.client = APIClient()
 
     def test_ingredient_list(self):
-        """
-        Тест получения списка ингредиентов.
+        """Тест получения списка ингредиентов.
 
         - Проверка успешного запроса (200 OK)
         - Проверка количества возвращаемых ингредиентов
@@ -456,8 +432,7 @@ class IngredientTagAPITests(APITestCase, TestSettingsMixin):
         self.assertIn('Pepper', ingredient_names)
 
     def test_ingredient_filter(self):
-        """
-        Тест фильтрации ингредиентов по имени.
+        """Тест фильтрации ингредиентов по имени.
 
         - Проверка успешного запроса (200 OK)
         - Проверка количества результатов после фильтрации
@@ -470,8 +445,7 @@ class IngredientTagAPITests(APITestCase, TestSettingsMixin):
         self.assertEqual(response.data[0]['name'], 'Salt')
 
     def test_tag_list(self):
-        """
-        Тест получения списка тегов.
+        """Тест получения списка тегов.
 
         - Проверка успешного запроса (200 OK)
         - Проверка количества возвращаемых тегов
@@ -484,8 +458,7 @@ class IngredientTagAPITests(APITestCase, TestSettingsMixin):
         self.assertEqual(response.data[0]['name'], 'Spicy')
 
     def test_tag_detail(self):
-        """
-        Тест получения детальной информации о теге.
+        """Тест получения детальной информации о теге.
 
         - Проверка успешного запроса (200 OK)
         - Проверка корректности данных тега
@@ -497,8 +470,7 @@ class IngredientTagAPITests(APITestCase, TestSettingsMixin):
 
 
 class FilterTests(APITestCase, TestSettingsMixin):
-    """
-    Тесты фильтрации рецептов.
+    """Тесты фильтрации рецептов.
 
     - Фильтрация по тегам
     - Фильтрация по автору
@@ -506,8 +478,7 @@ class FilterTests(APITestCase, TestSettingsMixin):
     """
 
     def setUp(self):
-        """
-        Подготовка данных для тестов.
+        """Подготовка данных для тестов.
 
         - Создание пользователя
         - Создание ингредиентов и тегов
@@ -562,8 +533,7 @@ class FilterTests(APITestCase, TestSettingsMixin):
         return response.data
 
     def test_filter_by_tag(self):
-        """
-        Тест фильтрации рецептов по тегу.
+        """Тест фильтрации рецептов по тегу.
 
         - Проверка успешного запроса (200 OK)
         - Проверка количества отфильтрованных рецептов
@@ -577,8 +547,7 @@ class FilterTests(APITestCase, TestSettingsMixin):
         self.assertEqual(results[0]['name'], 'Pancakes')
 
     def test_filter_by_author(self):
-        """
-        Тест фильтрации рецептов по автору.
+        """Тест фильтрации рецептов по автору.
 
         - Проверка успешного запроса (200 OK)
         - Проверка количества рецептов автора
@@ -590,8 +559,7 @@ class FilterTests(APITestCase, TestSettingsMixin):
         self.assertEqual(len(results), 2)
 
     def test_filter_favorites(self):
-        """
-        Тест фильтрации избранных рецептов.
+        """Тест фильтрации избранных рецептов.
 
         - Проверка успешного запроса (200 OK)
         - Проверка количества избранных рецептов
