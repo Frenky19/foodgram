@@ -1,11 +1,11 @@
 from django.contrib.auth.models import AbstractUser
 from django.db import models
 
+from api.validators import models_names_validator, username_validator
 from utils.constants import (EMAIL_LIMIT, FIRST_NAME_LIMIT, LAST_NAME_LIMIT,
                              USERNAME_LIMIT)
 
 
-# надо добавить валидацию логина
 class User(AbstractUser):
     """Пользователь системы с расширенной функциональностью.
 
@@ -18,6 +18,7 @@ class User(AbstractUser):
         max_length=USERNAME_LIMIT,
         unique=True,
         verbose_name='Логин пользователя',
+        validators=[username_validator]
     )
     email = models.EmailField(
         max_length=EMAIL_LIMIT,
@@ -26,11 +27,13 @@ class User(AbstractUser):
     )
     first_name = models.CharField(
         max_length=FIRST_NAME_LIMIT,
-        verbose_name='Имя'
+        verbose_name='Имя',
+        validators=[models_names_validator]
     )
     last_name = models.CharField(
         max_length=LAST_NAME_LIMIT,
-        verbose_name='Фамилия'
+        verbose_name='Фамилия',
+        validators=[models_names_validator]
     )
     avatar = models.ImageField(
         upload_to='media/avatars/',

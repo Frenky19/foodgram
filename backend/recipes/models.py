@@ -3,6 +3,7 @@ from django.core.validators import MaxValueValidator, MinValueValidator
 from django.db import models
 from django.utils.text import slugify
 
+from api.validators import models_names_validator
 from utils.constants import (
     INGREDIENT_NAME_LIMIT, MEASUREMENT_UNIT_LIMIT, MAX_AMOUNT, MAX_COOK_TIME,
     MIN_AMOUNT, MIN_COOK_TIME, RECIPE_NAME_LIMIT, TAG_NAME_LIMIT,
@@ -11,14 +12,14 @@ from utils.constants import (
 User = get_user_model()
 
 
-# Надо доработать валидацию разрешенных символов для всех моделей
 class Ingredient(models.Model):
     """Ингредиент с указанием единицы измерения."""
 
     name = models.CharField(
         max_length=INGREDIENT_NAME_LIMIT,
         unique=True,
-        verbose_name='Название ингредиента'
+        verbose_name='Название ингредиента',
+        validators=[models_names_validator]
     )
     measurement_unit = models.CharField(
         max_length=MEASUREMENT_UNIT_LIMIT,
@@ -49,7 +50,8 @@ class Tag(models.Model):
     name = models.CharField(
         max_length=TAG_NAME_LIMIT,
         unique=True,
-        verbose_name='Название'
+        verbose_name='Название',
+        validators=[models_names_validator]
     )
     slug = models.SlugField(
         max_length=TAG_SLUG_LIMIT,
@@ -89,7 +91,8 @@ class Recipe(models.Model):
     )
     name = models.CharField(
         max_length=RECIPE_NAME_LIMIT,
-        verbose_name='Название рецепта'
+        verbose_name='Название рецепта',
+        validators=[models_names_validator]
     )
     image = models.ImageField(
         upload_to='media/recipes/',
