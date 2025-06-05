@@ -19,7 +19,13 @@ class Ingredient(models.Model):
         max_length=INGREDIENT_NAME_LIMIT,
         unique=True,
         verbose_name='Название ингредиента',
-        validators=[models_names_validator]
+        validators=[models_names_validator(
+            'Название ингредиента должно содержать только '
+            'буквы, апострофы, пробелы и дефисы;'
+        )],
+        error_messages={
+            'unique': 'Ингредиент с таким названием уже существует'
+        }
     )
     measurement_unit = models.CharField(
         max_length=MEASUREMENT_UNIT_LIMIT,
@@ -30,12 +36,15 @@ class Ingredient(models.Model):
         """Порядок отображения и названия ингредиентов."""
 
         ordering = ['name']
-        verbose_name = 'Ингридиент'
-        verbose_name_plural = 'Ингридиенты'
+        verbose_name = 'Ингредиент'
+        verbose_name_plural = 'Ингредиенты'
         constraints = (
             models.UniqueConstraint(
                 fields=('name', 'measurement_unit'),
                 name='unique_ingredient',
+                violation_error_message=(
+                    'Ингредиент с такой единицей измерения уже существует'
+                )
             ),
         )
 
@@ -51,7 +60,11 @@ class Tag(models.Model):
         max_length=TAG_NAME_LIMIT,
         unique=True,
         verbose_name='Название',
-        validators=[models_names_validator]
+        validators=[models_names_validator(
+            'Название тэга должно содержать только '
+            'буквы, апострофы, пробелы и дефисы;'
+        )],
+        error_messages={'unique': 'Тег с таким названием уже существует'}
     )
     slug = models.SlugField(
         max_length=TAG_SLUG_LIMIT,
@@ -92,7 +105,10 @@ class Recipe(models.Model):
     name = models.CharField(
         max_length=RECIPE_NAME_LIMIT,
         verbose_name='Название рецепта',
-        validators=[models_names_validator]
+        validators=[models_names_validator(
+            'Название рецепта должно содержать только '
+            'буквы, апострофы, пробелы и дефисы;'
+        )],
     )
     image = models.ImageField(
         upload_to='media/recipes/',
@@ -111,10 +127,10 @@ class Recipe(models.Model):
         validators=[
             MinValueValidator(
                 MIN_COOK_TIME,
-                f'Время готовки не может быть менее {MIN_COOK_TIME} минут(ы)'),
+                f'Время готовки не может быть менее {MIN_COOK_TIME} минута'),
             MaxValueValidator(
                 MAX_COOK_TIME,
-                f'Время готовки не может превышать {MAX_COOK_TIME} минут(ы)'),
+                f'Время готовки не может превышать {MAX_COOK_TIME} минут'),
         ],
         verbose_name='Время приготовления в минутах',
     )
@@ -129,7 +145,10 @@ class Recipe(models.Model):
         constraints = [
             models.UniqueConstraint(
                 fields=('name', 'author'),
-                name='unique_recipe_author'
+                name='unique_recipe_author',
+                violation_error_message=(
+                    'У вас уже есть рецепт с таким названием'
+                )
             )
         ]
 
@@ -174,6 +193,7 @@ class RecipeIngredient(models.Model):
             models.UniqueConstraint(
                 fields=('ingredient', 'recipe'),
                 name='unique_recipe_ingredient',
+                violation_error_message='Этот ингредиент уже добавлен в рецепт'
             ),
         )
 
@@ -220,7 +240,7 @@ class FavoriteShoppingCartBaseModel(models.Model):
 
     def __str__(self):
         """Рецепт {название} Пользователя {логин}."""
-        return f'Рецепт {self.recipe.name} Пользователя {self.user.username})'
+        return f'Рецепт {self.recipe.name} Пользователя {self.user.username}'
 
 
 class Favorite(FavoriteShoppingCartBaseModel):

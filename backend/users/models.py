@@ -18,22 +18,31 @@ class User(AbstractUser):
         max_length=USERNAME_LIMIT,
         unique=True,
         verbose_name='Логин пользователя',
-        validators=[username_validator]
+        validators=[username_validator],
+        error_messages={
+            'unique': 'Пользователь с таким логином уже существует'
+        }
     )
     email = models.EmailField(
         max_length=EMAIL_LIMIT,
         unique=True,
         verbose_name='Email',
+        error_messages={'unique': 'Пользователь с таким email уже существует'}
     )
     first_name = models.CharField(
         max_length=FIRST_NAME_LIMIT,
         verbose_name='Имя',
-        validators=[models_names_validator]
+        validators=[models_names_validator(
+            'Имя должно содержать только буквы, апострофы, пробелы и дефисы;'
+        )],
     )
     last_name = models.CharField(
         max_length=LAST_NAME_LIMIT,
         verbose_name='Фамилия',
-        validators=[models_names_validator]
+        validators=[models_names_validator(
+            'Фамилия должна содержать только буквы, '
+            'апострофы, пробелы и дефисы;'
+        )],
     )
     avatar = models.ImageField(
         upload_to='media/avatars/',
@@ -88,7 +97,10 @@ class Subscription(models.Model):
         constraints = [
             models.UniqueConstraint(
                 fields=('user', 'author'),
-                name='unique_follow'
+                name='unique_follow',
+                violation_error_message=(
+                    'Вы уже подписаны на этого пользователя'
+                )
             )
         ]
 
