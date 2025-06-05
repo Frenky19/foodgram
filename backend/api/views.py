@@ -1,9 +1,9 @@
 from django.contrib.auth import get_user_model
-from django.db.models import Sum
+from django.db.models import BooleanField, Count, Exists, OuterRef, Sum, Value
 from django.http import HttpResponse
 from django.shortcuts import get_object_or_404
 from django_filters.rest_framework import DjangoFilterBackend
-from rest_framework import mixins, status, viewsets
+from rest_framework import status, viewsets
 from rest_framework.decorators import action
 from rest_framework.parsers import FormParser, MultiPartParser
 from rest_framework.permissions import (AllowAny, IsAuthenticated,
@@ -17,8 +17,8 @@ from api.serializers import (IngredientSerializer,
                              RecipeMinifiedSerializer, RecipeSerializer,
                              SetAvatarSerializer, SetPasswordSerializer,
                              SubscriptionSerializer, TagSerializer,
-                             TokenCreateSerializer, UserCreateSerializer,
-                             UserSerializer, UserWithRecipesSerializer)
+                             UserCreateSerializer, UserSerializer,
+                             UserWithRecipesSerializer)
 from recipes.models import (Favorite, Ingredient, Recipe, RecipeIngredient,
                             ShoppingCart, Tag)
 from users.models import Subscription
@@ -82,7 +82,6 @@ class UserViewSet(viewsets.ModelViewSet):
     def delete_avatar(self, request):
         """Удаление аватара текущего пользователя."""
         request.user.avatar.delete()
-        request.user.avatar = None
         request.user.save()
         return Response(status=status.HTTP_204_NO_CONTENT)
 
@@ -121,7 +120,9 @@ class UserViewSet(viewsets.ModelViewSet):
     def subscriptions(self, request):
         """Получение списка подписок с рецептами."""
         user = request.user
-        subscriptions = User.objects.filter(followers__user=user)
+        subscriptions = User.objects.filter(followers__user=user).annotate(
+            recipes_count=Count('recipes')
+        )
         page = self.paginate_queryset(subscriptions)
         recipes_limit = request.query_params.get('recipes_limit')
         context = self.get_serializer_context()
@@ -197,6 +198,26 @@ class RecipeViewSet(viewsets.ModelViewSet):
     permission_classes = [IsAuthenticatedOrReadOnly]
     pagination_class = CustomPagination
     filter_backends = [RecipeFilter]
+
+    def get_queryset(self):
+        """Аннотация queryset'а для добавления избранного и корзины."""
+        user = self.request.user
+        if user.is_authenticated:
+            favorite_subquery = Favorite.objects.filter(
+                user=user, recipe=OuterRef('pk')
+            )
+            shopping_cart_subquery = ShoppingCart.objects.filter(
+                user=user, recipe=OuterRef('pk')
+            )
+            return Recipe.objects.annotate(
+                is_favorited=Exists(favorite_subquery),
+                is_in_shopping_cart=Exists(shopping_cart_subquery)
+            )
+        else:
+            return Recipe.objects.annotate(
+                is_favorited=Value(False, output_field=BooleanField()),
+                is_in_shopping_cart=Value(False, output_field=BooleanField())
+            )
 
     def get_serializer_class(self):
         """Выбор сериализатора в зависимости от действия."""
@@ -295,29 +316,3 @@ class RecipeViewSet(viewsets.ModelViewSet):
             'short_link': short_link
         })
         return Response(serializer.data)
-
-
-class TokenCreateViewSet(mixins.CreateModelMixin, viewsets.GenericViewSet):
-    """Аутентификация пользователей и получение токена доступа."""
-
-    serializer_class = TokenCreateSerializer
-    permission_classes = [AllowAny]
-
-    def create(self, request, *args, **kwargs):
-        """Создание токена для авторизованного доступа."""
-        serializer = self.get_serializer(data=request.data)
-        serializer.is_valid(raise_exception=True)
-        return Response(
-            {'auth_token': 'your_generated_token_here'},
-            status=status.HTTP_200_OK
-        )
-
-
-class TokenDestroyViewSet(mixins.DestroyModelMixin, viewsets.GenericViewSet):
-    """Завершение сессии пользователя."""
-
-    permission_classes = [IsAuthenticated]
-
-    def destroy(self, request, *args, **kwargs):
-        """Аннулирование текущего токена доступа."""
-        return Response(status=status.HTTP_204_NO_CONTENT)

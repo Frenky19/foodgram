@@ -3,10 +3,10 @@ import uuid
 
 from django.contrib.auth import get_user_model
 from django.core.files.base import ContentFile
+from django.shortcuts import get_object_or_404
 from rest_framework import serializers
 
-from recipes.models import (Favorite, Ingredient, Recipe, RecipeIngredient,
-                            ShoppingCart, Tag)
+from recipes.models import (Ingredient, Recipe, RecipeIngredient, Tag)
 from users.models import Subscription
 from utils.constants import MIN_AMOUNT
 
@@ -198,8 +198,8 @@ class RecipeSerializer(serializers.ModelSerializer):
         source='ingredient_list',
         read_only=True
     )
-    is_favorited = serializers.SerializerMethodField()
-    is_in_shopping_cart = serializers.SerializerMethodField()
+    is_favorited = serializers.BooleanField(read_only=True)
+    is_in_shopping_cart = serializers.BooleanField(read_only=True)
     image = serializers.SerializerMethodField()
 
     class Meta:
@@ -224,40 +224,6 @@ class RecipeSerializer(serializers.ModelSerializer):
         if obj.image:
             return self.context['request'].build_absolute_uri(obj.image.url)
         return None
-
-    def get_is_favorited(self, obj):
-        """Проверяет, добавлен ли рецепт в избранное текущим пользователем.
-
-        Args:
-            obj: Объект рецепта
-
-        Returns:
-            bool: True если рецепт в избранном, иначе False
-        """
-        user = self.context['request'].user
-        if user.is_authenticated:
-            return Favorite.objects.filter(
-                user=user,
-                recipe=obj
-            ).exists()
-        return False
-
-    def get_is_in_shopping_cart(self, obj):
-        """Проверяет, добавлен ли рецепт в корзину текущим пользователем.
-
-        Args:
-            obj: Объект рецепта
-
-        Returns:
-            bool: True если рецепт в корзине, иначе False
-        """
-        user = self.context['request'].user
-        if user.is_authenticated:
-            return ShoppingCart.objects.filter(
-                user=user,
-                recipe=obj
-            ).exists()
-        return False
 
 
 class RecipeCreateUpdateSerializer(serializers.ModelSerializer):
@@ -313,12 +279,11 @@ class RecipeCreateUpdateSerializer(serializers.ModelSerializer):
                 raise serializers.ValidationError(
                     'Неверный формат ингредиента'
                 )
-            try:
-                ingredient = Ingredient.objects.get(id=ingredient_id)
-            except Ingredient.DoesNotExist:
+            if not isinstance(amount, str) or not amount.isdigit():
                 raise serializers.ValidationError(
-                    f'Ингредиент с ID {ingredient_id} не существует'
+                    'Количество должно быть числом'
                 )
+            ingredient = get_object_or_404(Ingredient, id=ingredient_id)
             if ingredient_id in ingredient_ids:
                 raise serializers.ValidationError(
                     f'Ингредиент {ingredient.name} указан дважды'
@@ -326,8 +291,8 @@ class RecipeCreateUpdateSerializer(serializers.ModelSerializer):
             ingredient_ids.add(ingredient_id)
             if int(amount) < MIN_AMOUNT:
                 raise serializers.ValidationError(
-                    f'Количество {ingredient.name}'
-                    f' должно быть не менее {MIN_AMOUNT}'
+                    f'Количество {ingredient.name} '
+                    f'должно быть не менее {MIN_AMOUNT}'
                 )
             validated_ingredients.append({
                 'ingredient': ingredient,
@@ -399,17 +364,12 @@ class RecipeCreateUpdateSerializer(serializers.ModelSerializer):
         Returns:
             Recipe: Обновленный объект рецепта
         """
-        for key, value in validated_data.items():
-            if key not in ['ingredients', 'tags']:
-                setattr(instance, key, value)
-        instance.save()
-        if 'ingredients' in validated_data:
-            instance.ingredient_list.all().delete()
-            self.create_ingredients(
-                instance, validated_data.pop('ingredients')
-            )
-        if 'tags' in validated_data:
-            instance.tags.set(validated_data.pop('tags'))
+        ingredients = validated_data.pop('ingredients')
+        tags = validated_data.pop('tags')
+        instance = super().update(instance, validated_data)
+        instance.ingredient_list.all().delete()
+        self.create_ingredients(instance, ingredients)
+        instance.tags.set(tags)
         return instance
 
     def to_representation(self, instance):
@@ -431,7 +391,7 @@ class UserWithRecipesSerializer(UserSerializer):
     """Представление пользователя с его рецептами."""
 
     recipes = serializers.SerializerMethodField()
-    recipes_count = serializers.SerializerMethodField()
+    recipes_count = serializers.IntegerField(default=0)
 
     class Meta(UserSerializer.Meta):
         """Поля и модель для пользователя с рецептами."""
@@ -452,27 +412,13 @@ class UserWithRecipesSerializer(UserSerializer):
         request = self.context.get('request')
         limit = request.query_params.get('recipes_limit') if request else None
         recipes = obj.recipes.all()
-        if limit:
-            try:
-                recipes = recipes[:int(limit)]
-            except ValueError:
-                pass
+        if limit and limit.isdigit():  # Проверка, что limit — строка из цифр
+            recipes = recipes[:int(limit)]
         return RecipeMinifiedSerializer(
             recipes,
             many=True,
             context=self.context
         ).data
-
-    def get_recipes_count(self, obj):
-        """Получение общего количества рецептов пользователя.
-
-        Args:
-            obj: Объект пользователя
-
-        Returns:
-            int: Количество рецептов
-        """
-        return obj.recipes.count()
 
 
 class SubscriptionSerializer(serializers.ModelSerializer):
@@ -508,13 +454,6 @@ class SubscriptionSerializer(serializers.ModelSerializer):
                 'Вы уже подписаны на этого пользователя'
             )
         return data
-
-
-class TokenCreateSerializer(serializers.Serializer):
-    """Аутентификация пользователя по email и паролю."""
-
-    email = serializers.EmailField(required=True)
-    password = serializers.CharField(required=True)
 
 
 class RecipeGetShortLinkSerializer(serializers.Serializer):
