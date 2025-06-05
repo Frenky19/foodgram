@@ -140,3 +140,6 @@ dmypy.json
 
 static/
 media/
+
+# local tests
+tests.py.bak
