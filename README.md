@@ -159,6 +159,12 @@ docker-compose exec backend python manage.py createsuperuser
 
 ## API Endpoints
 
+Документация:
+
+- GET /schema/ - Скачивание API документации локально в формате .yml
+
+- GET /schema/redoc/ - Просмотр API документации на основе сгенерированной схемы в интерфейсе Redoc
+
 Пользователи:
 
 - POST /api/users/ - Регистрация нового пользователя
