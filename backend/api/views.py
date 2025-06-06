@@ -1,5 +1,6 @@
 from django.contrib.auth import get_user_model
-from django.db.models import BooleanField, Count, Exists, OuterRef, Sum, Value
+from django.db.models import (BooleanField, Count, Exists, OuterRef, Prefetch,
+                              Sum, Value)
 from django.http import HttpResponse
 from django.shortcuts import get_object_or_404
 from django_filters.rest_framework import DjangoFilterBackend
@@ -14,7 +15,7 @@ from api.pagination import CustomPagination
 from api.serializers import (IngredientSerializer,
                              RecipeCreateUpdateSerializer,
                              RecipeGetShortLinkSerializer,
-                             RecipeMinifiedSerializer, RecipeSerializer,
+                             RecipeMinifiedSerializer, RecipeRelationSerializer, RecipeSerializer,
                              SetAvatarSerializer, SetPasswordSerializer,
                              SubscriptionSerializer, TagSerializer,
                              UserCreateSerializer, UserSerializer,
@@ -194,7 +195,17 @@ class RecipeFilter(DjangoFilterBackend):
 class RecipeViewSet(viewsets.ModelViewSet):
     """Управление рецептами: создание, просмотр, обновление, удаление."""
 
-    queryset = Recipe.objects.all()
+    queryset = (
+        Recipe.objects.all()
+        .select_related('author')
+        .prefetch_related('tags')
+        .prefetch_related(
+            Prefetch(
+                'ingredients',
+                queryset=RecipeIngredient.objects.select_related('ingredient')
+            )
+        )
+    )
     permission_classes = [IsAuthenticatedOrReadOnly]
     pagination_class = CustomPagination
     filter_backends = [RecipeFilter]
@@ -252,29 +263,31 @@ class RecipeViewSet(viewsets.ModelViewSet):
             model: Модель отношения (Favorite или ShoppingCart)
             relation_name: Название отношения для сообщений
         """
-        recipe = get_object_or_404(Recipe, pk=pk)
         user = request.user
         if request.method == 'POST':
-            if model.objects.filter(user=user, recipe=recipe).exists():
-                return Response(
-                    {'detail': f'Рецепт уже в {relation_name}'},
-                    status=status.HTTP_400_BAD_REQUEST
-                )
-            model.objects.create(user=user, recipe=recipe)
-            serializer = RecipeMinifiedSerializer(
-                recipe,
-                context=self.get_serializer_context()
+            recipe = get_object_or_404(Recipe, pk=pk)
+            serializer = RecipeRelationSerializer(
+                data={},
+                context={
+                    'request': request,
+                    'recipe': recipe,
+                    'model': model,
+                    'relation_name': relation_name
+                }
             )
+            serializer.is_valid(raise_exception=True)
+            serializer.save()
             return Response(serializer.data, status=status.HTTP_201_CREATED)
         elif request.method == 'DELETE':
-            relation = model.objects.filter(user=user, recipe=recipe)
-            if not relation.exists():
+            deleted_count, _ = model.objects.filter(
+                user=user, recipe_id=pk
+            ).delete()
+            if deleted_count == 0:
                 return Response(
                     {'detail': f'Рецепта нет в {relation_name}'},
                     status=status.HTTP_400_BAD_REQUEST
                 )
-            relation.delete()
-            return Response(status=status.HTTP_204_NO_CONTENT)
+        return Response(status=status.HTTP_204_NO_CONTENT)
 
     @action(
         detail=False,

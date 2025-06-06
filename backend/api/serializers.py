@@ -5,8 +5,10 @@ from django.contrib.auth import get_user_model
 from django.core.files.base import ContentFile
 from django.shortcuts import get_object_or_404
 from rest_framework import serializers
+from rest_framework.validators import UniqueTogetherValidator
 
-from recipes.models import (Ingredient, Recipe, RecipeIngredient, Tag)
+from recipes.models import (Favorite, Ingredient, Recipe, RecipeIngredient,
+                            ShoppingCart, Tag)
 from users.models import Subscription
 from utils.constants import MIN_AMOUNT
 
@@ -275,25 +277,25 @@ class RecipeCreateUpdateSerializer(serializers.ModelSerializer):
         for item in value:
             ingredient_id = item.get('id')
             amount = item.get('amount')
-            if not ingredient_id or not amount:
+            if ingredient_id is None or amount is None:
                 raise serializers.ValidationError(
                     'Неверный формат ингредиента'
                 )
-            if not isinstance(amount, str) or not amount.isdigit():
+            if not isinstance(int(amount), int):
                 raise serializers.ValidationError(
                     'Количество должно быть числом'
                 )
             ingredient = get_object_or_404(Ingredient, id=ingredient_id)
-            if ingredient_id in ingredient_ids:
-                raise serializers.ValidationError(
-                    f'Ингредиент {ingredient.name} указан дважды'
-                )
-            ingredient_ids.add(ingredient_id)
             if int(amount) < MIN_AMOUNT:
                 raise serializers.ValidationError(
                     f'Количество {ingredient.name} '
                     f'должно быть не менее {MIN_AMOUNT}'
                 )
+            if ingredient_id in ingredient_ids:
+                raise serializers.ValidationError(
+                    f'Ингредиент {ingredient.name} указан дважды'
+                )
+            ingredient_ids.add(ingredient_id)
             validated_ingredients.append({
                 'ingredient': ingredient,
                 'amount': amount
@@ -412,7 +414,7 @@ class UserWithRecipesSerializer(UserSerializer):
         request = self.context.get('request')
         limit = request.query_params.get('recipes_limit') if request else None
         recipes = obj.recipes.all()
-        if limit and limit.isdigit():  # Проверка, что limit — строка из цифр
+        if limit and limit.isdigit():
             recipes = recipes[:int(limit)]
         return RecipeMinifiedSerializer(
             recipes,
@@ -460,3 +462,47 @@ class RecipeGetShortLinkSerializer(serializers.Serializer):
     """Сокращённая ссылка для доступа к рецепту."""
 
     short_link = serializers.URLField()
+
+
+class RecipeRelationSerializer(serializers.Serializer):
+    """Добавление рецепта в избранное или корзину покупок.
+
+    Используется для обработки POST-запроса без тела,
+    создания связи между пользователем и рецептом, а также возврата
+    краткой информации о рецепте в ответе.
+    """
+
+    def validate(self, data):
+        """Проверка на наличие связи между пользователем и рецептом.
+
+        Raises:
+            serializers.ValidationError: Если связь уже существует.
+        """
+        user = self.context['request'].user
+        recipe = self.context['recipe']
+        model = self.context['model']
+        relation_name = self.context['relation_name']
+
+        if model.objects.filter(user=user, recipe=recipe).exists():
+            raise serializers.ValidationError(
+                f'Рецепт уже в {relation_name}'
+            )
+        return data
+
+    def create(self, validated_data):
+        """Создание объекта связи между пользователем и рецептом.
+
+        Returns:
+            Объект рецепта, который будет передан в to_representation.
+        """
+        user = self.context['request'].user
+        recipe = self.context['recipe']
+        model = self.context['model']
+        model.objects.create(user=user, recipe=recipe)
+        return recipe
+
+    def to_representation(self, instance):
+        """Возвращает сериализованные данные рецепта после создания связи."""
+        return RecipeMinifiedSerializer(
+            instance, context=self.context
+        ).data
