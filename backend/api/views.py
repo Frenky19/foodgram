@@ -15,7 +15,7 @@ from api.pagination import CustomPagination
 from api.serializers import (IngredientSerializer,
                              RecipeCreateUpdateSerializer,
                              RecipeGetShortLinkSerializer,
-                             RecipeMinifiedSerializer, RecipeRelationSerializer, RecipeSerializer,
+                             RecipeRelationSerializer, RecipeSerializer,
                              SetAvatarSerializer, SetPasswordSerializer,
                              SubscriptionSerializer, TagSerializer,
                              UserCreateSerializer, UserSerializer,
@@ -103,12 +103,15 @@ class UserViewSet(viewsets.ModelViewSet):
             serializer.save()
             return Response(serializer.data, status=status.HTTP_201_CREATED)
         elif request.method == 'DELETE':
-            subscription = get_object_or_404(
-                Subscription,
+            subscription, _ = Subscription.objects.filter(
                 user=request.user,
                 author=author
-            )
-            subscription.delete()
+            ).delete()
+            if subscription == 0:
+                return Response(
+                    {'detail': 'Вы не были подписаны на этого автора.'},
+                    status=status.HTTP_400_BAD_REQUEST
+                )
             return Response(status=status.HTTP_204_NO_CONTENT)
 
     @action(
@@ -279,10 +282,10 @@ class RecipeViewSet(viewsets.ModelViewSet):
             serializer.save()
             return Response(serializer.data, status=status.HTTP_201_CREATED)
         elif request.method == 'DELETE':
-            deleted_count, _ = model.objects.filter(
+            relation, _ = model.objects.filter(
                 user=user, recipe_id=pk
             ).delete()
-            if deleted_count == 0:
+            if relation == 0:
                 return Response(
                     {'detail': f'Рецепта нет в {relation_name}'},
                     status=status.HTTP_400_BAD_REQUEST
