@@ -120,6 +120,9 @@ docker-compose up -d --build
 ```
 
 Создайте миграции:
+(Возможно, что при выполнении команд, будет ошибка "Error response from daemon: No such container: backend".
+В это случае вместо "backend" укажите "foodgram-backend-1")
+
 
 ```
 docker-compose exec backend python manage.py makemigrations
@@ -143,7 +146,11 @@ docker-compose exec backend python manage.py collectstatic --no-input
 docker-compose exec backend python manage.py createsuperuser
 ```
 
-Заполните базу данных начальными данными (ингредиенты и теги).(надо сделать скрипт)
+Заполните базу данных начальными данными (ингредиенты).
+
+```
+docker exec backend python manage.py import_ingredients
+```
 
 Проект будет доступен по адресу: http://localhost/
 
