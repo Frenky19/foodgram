@@ -285,19 +285,23 @@ class RecipeViewSet(viewsets.ModelViewSet):
         ).annotate(
             total_amount=Sum('amount')
         ).order_by('ingredient__name')
-        content = 'Список покупок:\n\n'
-        for item in ingredients:
-            content += (
-                f"{item['ingredient__name']} - "
-                f"{item['total_amount']} "
-                f"{item['ingredient__measurement_unit']}\n"
-            )
-
+        content = self._generate_shopping_list_content(ingredients)
         response = HttpResponse(content, content_type='text/plain')
         response['Content-Disposition'] = (
             'attachment; filename="shopping_list.txt"'
         )
         return response
+
+    def _generate_shopping_list_content(self, ingredients):
+        """Генерация текстового содержимого для списка покупок."""
+        content = 'Список покупок:\n\n'
+        for item in ingredients:
+            content += (
+                f'{item["ingredient__name"]} - '
+                f'{item["total_amount"]} '
+                f'{item["ingredient__measurement_unit"]}\n'
+            )
+        return content
 
     @action(detail=True, methods=['get'], url_path='get-link')
     def get_link(self, request, pk=None):
