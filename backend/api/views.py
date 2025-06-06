@@ -3,7 +3,6 @@ from django.db.models import (BooleanField, Count, Exists, OuterRef, Prefetch,
                               Sum, Value)
 from django.http import HttpResponse
 from django.shortcuts import get_object_or_404
-from django_filters.rest_framework import DjangoFilterBackend
 from rest_framework import status, viewsets
 from rest_framework.decorators import action
 from rest_framework.parsers import FormParser, MultiPartParser
@@ -11,6 +10,7 @@ from rest_framework.permissions import (AllowAny, IsAuthenticated,
                                         IsAuthenticatedOrReadOnly)
 from rest_framework.response import Response
 
+from api.filters import RecipeFilter
 from api.pagination import CustomPagination
 from api.serializers import (IngredientSerializer,
                              RecipeCreateUpdateSerializer,
@@ -170,28 +170,6 @@ class IngredientViewSet(viewsets.ReadOnlyModelViewSet):
         name = self.request.query_params.get('name')
         if name:
             queryset = queryset.filter(name__istartswith=name)
-        return queryset
-
-
-class RecipeFilter(DjangoFilterBackend):
-    """Фильтрация рецептов по автору, тегам и пользовательским спискам."""
-
-    def filter_queryset(self, request, queryset, view):
-        """Фильтрация рецептов по параметрам запроса."""
-        author_id = request.query_params.get('author')
-        if author_id:
-            queryset = queryset.filter(author_id=author_id)
-        tags = request.query_params.getlist('tags')
-        if tags:
-            queryset = queryset.filter(tags__slug__in=tags).distinct()
-        is_favorited = request.query_params.get('is_favorited')
-        if is_favorited and request.user.is_authenticated:
-            if is_favorited == '1':
-                queryset = queryset.filter(favorites__user=request.user)
-        is_in_shopping_cart = request.query_params.get('is_in_shopping_cart')
-        if is_in_shopping_cart and request.user.is_authenticated:
-            if is_in_shopping_cart == '1':
-                queryset = queryset.filter(shopping_carts__user=request.user)
         return queryset
 
 

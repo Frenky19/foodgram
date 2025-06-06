@@ -5,10 +5,8 @@ from django.contrib.auth import get_user_model
 from django.core.files.base import ContentFile
 from django.shortcuts import get_object_or_404
 from rest_framework import serializers
-from rest_framework.validators import UniqueTogetherValidator
 
-from recipes.models import (Favorite, Ingredient, Recipe, RecipeIngredient,
-                            ShoppingCart, Tag)
+from recipes.models import Ingredient, Recipe, RecipeIngredient, Tag
 from users.models import Subscription
 from utils.constants import MIN_AMOUNT
 
