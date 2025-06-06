@@ -1,4 +1,7 @@
+from django_filters import rest_framework as filters
 from django_filters.rest_framework import DjangoFilterBackend
+
+from recipes.models import Ingredient
 
 
 class RecipeFilter(DjangoFilterBackend):
@@ -21,3 +24,13 @@ class RecipeFilter(DjangoFilterBackend):
             if is_in_shopping_cart == '1':
                 queryset = queryset.filter(shopping_carts__user=request.user)
         return queryset
+
+
+class IngredientFilter(filters.FilterSet):
+    """Фильтрация по частичному вхождению в начале названия."""
+
+    name = filters.CharFilter(field_name='name', lookup_expr='istartswith')
+
+    class Meta:
+        model = Ingredient
+        fields = ['name']
