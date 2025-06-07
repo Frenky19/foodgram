@@ -1,10 +1,13 @@
 import csv
+import logging
 
 from django.core.management.base import BaseCommand
 from django.db import IntegrityError
 
 from foodgram import settings
 from recipes.models import Ingredient
+
+logger = logging.getLogger(__name__)
 
 
 class Command(BaseCommand):
@@ -25,7 +28,7 @@ class Command(BaseCommand):
         5. Формирование отчета о результатах импорта
         """
         success_count = 0
-        print('Загрузка данных...')
+        logger.info('Загрузка данных...')
         with open(
                 f'{settings.BASE_DIR}/data/ingredients.csv',
                 'r',
@@ -43,7 +46,7 @@ class Command(BaseCommand):
                     if created:
                         success_count += 1
                     if not created:
-                        print(f'Ингредиент {obj} уже в базе данных')
+                        logger.debug(f'Ингредиент {obj} уже в базе данных')
                 except IntegrityError as err:
-                    print(f'Ошибка в столбце {row}: {err}')
-        print(f'{success_count} объектов были импортированы.')
+                    logger.error(f'Ошибка в строке {row}: {err}')
+        logger.info(f'Успешно импортировано объектов: {success_count}')
