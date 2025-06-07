@@ -7,7 +7,7 @@ from api.validators import models_names_validator
 from utils.constants import (
     INGREDIENT_NAME_LIMIT, MEASUREMENT_UNIT_LIMIT, MAX_AMOUNT, MAX_COOK_TIME,
     MIN_AMOUNT, MIN_COOK_TIME, RECIPE_NAME_LIMIT, TAG_NAME_LIMIT,
-    TAG_SLUG_LIMIT, TEXT_LIMIT)
+    TAG_SLUG_LIMIT)
 
 User = get_user_model()
 
@@ -116,7 +116,6 @@ class Recipe(models.Model):
         verbose_name='Изображение блюда'
     )
     text = models.TextField(
-        max_length=TEXT_LIMIT,
         verbose_name='Описание рецепта'
     )
     tags = models.ManyToManyField(
