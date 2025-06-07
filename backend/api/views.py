@@ -84,7 +84,6 @@ class UserViewSet(viewsets.ModelViewSet):
     def delete_avatar(self, request):
         """Удаление аватара текущего пользователя."""
         request.user.avatar.delete()
-        request.user.save()
         return Response(status=status.HTTP_204_NO_CONTENT)
 
     @action(
@@ -171,40 +170,41 @@ class IngredientViewSet(viewsets.ReadOnlyModelViewSet):
 class RecipeViewSet(viewsets.ModelViewSet):
     """Управление рецептами: создание, просмотр, обновление, удаление."""
 
-    queryset = (
-        Recipe.objects.all()
-        .select_related('author')
-        .prefetch_related('tags')
-        .prefetch_related(
-            Prefetch(
-                'ingredients',
-                queryset=RecipeIngredient.objects.select_related('ingredient')
-            )
-        )
-    )
     permission_classes = [IsAuthenticatedOrReadOnly]
     pagination_class = CustomPagination
     filter_backends = [RecipeFilter]
 
     def get_queryset(self):
         """Аннотация queryset'а для добавления избранного и корзины."""
+        base_queryset = Recipe.objects.select_related(
+            'author'
+        ).prefetch_related(
+            'tags',
+            Prefetch(
+                'ingredient_list',
+                queryset=RecipeIngredient.objects.select_related('ingredient')
+            )
+        )
         user = self.request.user
         if user.is_authenticated:
-            favorite_subquery = Favorite.objects.filter(
-                user=user, recipe=OuterRef('pk')
+            return base_queryset.annotate(
+                is_favorited=Exists(
+                    Favorite.objects.filter(
+                        user=user,
+                        recipe=OuterRef('pk')
+                    )
+                ),
+                is_in_shopping_cart=Exists(
+                    ShoppingCart.objects.filter(
+                        user=user,
+                        recipe=OuterRef('pk')
+                    )
+                )
             )
-            shopping_cart_subquery = ShoppingCart.objects.filter(
-                user=user, recipe=OuterRef('pk')
-            )
-            return Recipe.objects.annotate(
-                is_favorited=Exists(favorite_subquery),
-                is_in_shopping_cart=Exists(shopping_cart_subquery)
-            )
-        else:
-            return Recipe.objects.annotate(
-                is_favorited=Value(False, output_field=BooleanField()),
-                is_in_shopping_cart=Value(False, output_field=BooleanField())
-            )
+        return base_queryset.annotate(
+            is_favorited=Value(False, output_field=BooleanField()),
+            is_in_shopping_cart=Value(False, output_field=BooleanField())
+        )
 
     def get_serializer_class(self):
         """Выбор сериализатора в зависимости от действия."""
