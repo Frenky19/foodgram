@@ -27,6 +27,7 @@ flake8-isort==6.0.0
 flake8-quotes==3.3.2
 flake8-requirements==1.7.1
 flake8-rst-docstrings==0.3.0
+flake8-print==5.0.0
 gunicorn==20.1.0
 idna==3.10
 inflection==0.5.1
