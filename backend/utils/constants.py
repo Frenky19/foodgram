@@ -52,8 +52,5 @@ TAG_NAME_LIMIT = 32
 TAG_SLUG_LIMIT = 32
 """Ограничение по длине для поля slug модели Recipe."""
 
-TEXT_LIMIT = 512
-"""Ограничение по длине для поля text модели Recipe."""
-
 USERNAME_LIMIT = 150
 """Ограничение по длине для поля username модели User."""
