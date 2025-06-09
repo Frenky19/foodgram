@@ -75,6 +75,7 @@ class RecipeAdmin(admin.ModelAdmin):
         'author',
         'cooking_time',
         'favorite_count',
+        'tags'
     )
     search_fields = (
         'name',
@@ -130,7 +131,7 @@ class FavoriteAdmin(admin.ModelAdmin):
 
     list_display = ('recipe', 'user')
     search_fields = ('recipe',)
-    list_filter = (UserFilter, RecipeFilter)
+    list_filter = (RecipeFilter, UserFilter)
     autocomplete_fields = ('user', 'recipe')
     list_per_page = 30
 
@@ -160,6 +161,6 @@ class ShoppingListAdmin(admin.ModelAdmin):
             'user',
             'recipe__author'
         ).prefetch_related(
-            'recipe__ingredients',
+            'ingredient_list',
             'recipe__tags'
         )

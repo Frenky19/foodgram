@@ -9,17 +9,17 @@ from users.models import Subscription
 User = get_user_model()
 
 
-class UserFilter(AutocompleteFilter):
+class SubscriberFilter(AutocompleteFilter):
     """Автодополнение пользователя."""
 
-    title = 'Пользователь'
+    title = 'Подписчик'
     field_name = 'user'
 
 
 class AuthorFilter(AutocompleteFilter):
     """Автодополнение автора."""
 
-    title = 'Автор'
+    title = 'Автор рецепта'
     field_name = 'author'
 
 
@@ -59,7 +59,7 @@ class SubscriptionAdmin(admin.ModelAdmin):
     list_display = ('user', 'author')
     search_fields = ('user', 'author')
     list_filter = (
-        UserFilter,
+        SubscriberFilter,
         AuthorFilter
     )
     autocomplete_fields = ('user', 'author')
