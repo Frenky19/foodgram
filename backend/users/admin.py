@@ -1,3 +1,4 @@
+from admin_auto_filters.filters import AutocompleteFilter
 from django.contrib import admin
 from django.contrib.auth import get_user_model
 from django.contrib.auth.admin import UserAdmin as BaseUserAdmin
@@ -6,6 +7,20 @@ from django.utils.html import format_html
 from users.models import Subscription
 
 User = get_user_model()
+
+
+class UserFilter(AutocompleteFilter):
+    """Автодополнение пользователя."""
+
+    title = 'Пользователь'
+    field_name = 'user'
+
+
+class AuthorFilter(AutocompleteFilter):
+    """Автодополнение автора."""
+
+    title = 'Автор'
+    field_name = 'author'
 
 
 @admin.register(User)
@@ -19,6 +34,7 @@ class UserAdmin(BaseUserAdmin):
     list_filter = ('is_staff', 'is_superuser', 'is_active')
     readonly_fields = ('avatar_preview', 'date_joined', 'last_login')
     search_fields = ('username', 'email', 'first_name', 'last_name')
+    list_per_page = 30
 
     def avatar_preview(self, obj):
         """Отображает изображения профиля пользователя в админке.
@@ -41,18 +57,13 @@ class SubscriptionAdmin(admin.ModelAdmin):
     """Управление подписками пользователей в административном интерфейсе."""
 
     list_display = ('user', 'author')
-    list_filter = ('user', 'author')
-    search_fields = (
-        'user__username',
-        'user__email',
-        'user__first_name',
-        'user__last_name',
-        'author__username',
-        'author__email',
-        'author__first_name',
-        'author__last_name'
+    search_fields = ('user', 'author')
+    list_filter = (
+        UserFilter,
+        AuthorFilter
     )
     autocomplete_fields = ('user', 'author')
+    list_per_page = 30
 
     def get_queryset(self, request):
         """Оптимизированные запросы с предзагрузкой связанных объектов."""
