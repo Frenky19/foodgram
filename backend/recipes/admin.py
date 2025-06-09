@@ -40,7 +40,7 @@ class IngredientAdmin(admin.ModelAdmin):
     """Управление ингредиентами в админке."""
 
     list_display = ('name', 'measurement_unit')
-    search_fields = ('name',)
+    search_fields = ('^name',)
     list_filter = ('measurement_unit',)
 
 
@@ -49,7 +49,7 @@ class TagAdmin(admin.ModelAdmin):
     """Управление тегами в админке."""
 
     list_display = ('name', 'slug')
-    search_fields = ('name',)
+    search_fields = ('^name',)
     prepopulated_fields = {'slug': ('name',)}
 
 
@@ -77,7 +77,7 @@ class RecipeAdmin(admin.ModelAdmin):
         'favorite_count',
     )
     search_fields = (
-        'name',
+        '^name',
     )
     list_filter = (AuthorFilter, TagFilter)
     inlines = (RecipeIngredientInline,)
@@ -128,8 +128,8 @@ class RecipeAdmin(admin.ModelAdmin):
 class FavoriteAdmin(admin.ModelAdmin):
     """Управление избранными рецептами в админке."""
 
-    list_display = ('recipe', 'user', 'recipe_author')
-    search_fields = ('recipe',)
+    list_display = ('recipe', 'user')
+    search_fields = ('^recipe',)
     list_filter = (RecipeFilter, UserFilter)
     autocomplete_fields = ('user', 'recipe')
     list_per_page = 30
@@ -149,7 +149,7 @@ class ShoppingListAdmin(admin.ModelAdmin):
     """Управление корзинами для покупок."""
 
     list_display = ('recipe', 'user')
-    search_fields = ('recipe',)
+    search_fields = ('^recipe',)
     list_filter = (UserFilter, RecipeFilter)
     autocomplete_fields = ('user', 'recipe')
     list_per_page = 30

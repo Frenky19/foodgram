@@ -33,7 +33,7 @@ class UserAdmin(BaseUserAdmin):
     )
     list_filter = ('is_staff', 'is_superuser', 'is_active')
     readonly_fields = ('avatar_preview', 'date_joined', 'last_login')
-    search_fields = ('username', 'email', 'first_name', 'last_name')
+    search_fields = ('^username', '^email', '^first_name', '^last_name')
     list_per_page = 30
 
     def avatar_preview(self, obj):
@@ -57,7 +57,7 @@ class SubscriptionAdmin(admin.ModelAdmin):
     """Управление подписками пользователей в административном интерфейсе."""
 
     list_display = ('user', 'author')
-    search_fields = ('user', 'author')
+    search_fields = ('^user', '^author')
     list_filter = (
         SubscriberFilter,
         AuthorFilter
