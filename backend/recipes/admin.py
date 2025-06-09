@@ -128,7 +128,7 @@ class RecipeAdmin(admin.ModelAdmin):
 class FavoriteAdmin(admin.ModelAdmin):
     """Управление избранными рецептами в админке."""
 
-    list_display = ('recipe', 'user')
+    list_display = ('recipe', 'user', 'recipe_author')
     search_fields = ('recipe',)
     list_filter = (RecipeFilter, UserFilter)
     autocomplete_fields = ('user', 'recipe')
@@ -150,7 +150,7 @@ class ShoppingListAdmin(admin.ModelAdmin):
 
     list_display = ('recipe', 'user')
     search_fields = ('recipe',)
-    (UserFilter, RecipeFilter)
+    list_filter = (UserFilter, RecipeFilter)
     autocomplete_fields = ('user', 'recipe')
     list_per_page = 30
 
@@ -160,6 +160,5 @@ class ShoppingListAdmin(admin.ModelAdmin):
             'user',
             'recipe__author'
         ).prefetch_related(
-            'ingredient_list',
             'recipe__tags'
         )
