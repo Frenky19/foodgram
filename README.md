@@ -4,10 +4,7 @@ Foodgram - это онлайн-сервис для любителей кулин
 [![Foodgram Workflow](https://github.com/Frenky19/foodgram/actions/workflows/main.yml/badge.svg?event=push)](https://github.com/Frenky19/foodgram/actions/workflows/main.yml)
 
 # Данные от проекта
-- адрес сайта: https://foodgram-frenky19.zapto.org/
-- IP адрес сервера: 158.160.76.170
-- Логин суперюзера: user@user.com
-- Пароль суперюзера: user
+- адрес сайта: https://foodgram.site/
 
 ## Основные возможности
 - Создание, редактирование и удаление рецептов
